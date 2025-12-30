@@ -182,8 +182,25 @@
       <button class="btn" id="mClose">Close</button>
     </div>
   </div>
+  
+  <!-- Editable fields (hidden by default) -->
+  <div id="editFields" class="grid g-3" style="padding-top:8px; display:none">
+    <input id="eSong" class="input" placeholder="Song" />
+    <input id="eVersionLabel" class="input" placeholder="Version Label" />
+    <input id="eVersionArtist" class="input" placeholder="Version Artist" />
+    <input id="eArrangement" class="input" placeholder="Arrangement" />
+    <input id="eLanguage" class="input" placeholder="Language" />
+    <input id="eTheme" class="input" placeholder="Theme" />
+    <input id="eKey" class="input" placeholder="Key" />
+    <input id="eKeyM" class="input" placeholder="Typical Key (Male)" />
+    <input id="eKeyF" class="input" placeholder="Typical Key (Female)" />
+    <input id="eAudio" class="input" placeholder="Audio Link" />
+    <input id="eLyricsLink" class="input" placeholder="Lyrics Link" />
+    <textarea id="eLyrics" class="input" placeholder="Lyrics" rows="4"></textarea>
+    <textarea id="eNotes" class="input" placeholder="Context Notes" rows="3"></textarea>
+  </div>
 
-
+  
 <script>
 (function(){
   const COLS = [
@@ -256,6 +273,26 @@
     mLyricsLink: document.getElementById('mLyricsLink'),
     mLyrics: document.getElementById('mLyrics'),
     mNotes: document.getElementById('mNotes'),
+
+    // updateSong
+    mEdit: document.getElementById('mEdit'),
+    mSave: document.getElementById('mSave'),
+    mCancel: document.getElementById('mCancel'),
+    editFields: document.getElementById('editFields'),
+
+    eSong: document.getElementById('eSong'),
+    eVersionLabel: document.getElementById('eVersionLabel'),
+    eVersionArtist: document.getElementById('eVersionArtist'),
+    eArrangement: document.getElementById('eArrangement'),
+    eLanguage: document.getElementById('eLanguage'),
+    eTheme: document.getElementById('eTheme'),
+    eKey: document.getElementById('eKey'),
+    eKeyM: document.getElementById('eKeyM'),
+    eKeyF: document.getElementById('eKeyF'),
+    eAudio: document.getElementById('eAudio'),
+    eLyricsLink: document.getElementById('eLyricsLink'),
+    eLyrics: document.getElementById('eLyrics'),
+    eNotes: document.getElementById('eNotes'),
   };
 
   // local storage
@@ -449,6 +486,10 @@
     }catch(e){ alert(e.message||e); }
   }
 
+  // edit functions
+let currentRow = null;
+let editMode = false;
+
   // modal
   function openModal(row){
     els.mTitle.textContent = row.Song || '';
@@ -463,7 +504,82 @@
     els.mLyrics.textContent = row.Lyrics || '';
     els.mNotes.textContent = row.ContextNotes || '';
     els.modal.classList.add('open');
+
+    //song edit feature
+    els.eSong.value          = row.Song || '';
+    els.eVersionLabel.value  = row.VersionLabel || '';
+    els.eVersionArtist.value = row.VersionArtist || '';
+    els.eArrangement.value   = row.Arrangement || '';
+    els.eLanguage.value      = row.Language || '';
+    els.eTheme.value         = row.Theme || '';
+    els.eKey.value           = row.Key || '';
+    els.eKeyM.value          = row.TypicalKeyMale || '';
+    els.eKeyF.value          = row.TypicalKeyFemale || '';
+    els.eAudio.value         = row.LinkAudio || '';
+    els.eLyricsLink.value    = row.LinkLyrics || '';
+    els.eLyrics.value        = row.Lyrics || '';
+    els.eNotes.value         = row.ContextNotes || '';
+
+  // show/hide edit controls based on admin creds present
+  const adminReady = !!(els.adminUser.value.trim() && els.adminPin.value.trim());
+    els.mEdit.style.display = adminReady ? '' : 'none';
+    els.mSave.style.display = 'none';
+    els.mCancel.style.display = 'none';
+    els.editFields.style.display = 'none';
+
+    els.modal.classList.add('open');
   }
+    }
+ els.mEdit.addEventListener('click', ()=>{
+  if (!currentRow) return;
+  editMode = true;
+  els.mEdit.style.display = 'none';
+  els.mSave.style.display = '';
+  els.mCancel.style.display = '';
+  els.editFields.style.display = ''; // show inputs
+});
+
+els.mCancel.addEventListener('click', ()=>{
+  editMode = false;
+  els.mEdit.style.display = '';
+  els.mSave.style.display = 'none';
+  els.mCancel.style.display = 'none';
+  els.editFields.style.display = 'none';
+});
+
+els.mSave.addEventListener('click', async ()=>{
+  if (!currentRow) return;
+  try{
+    const body = {
+      action:'updateSong',
+      SongID: currentRow.SongID || '',
+      Slug:   currentRow.Slug   || '',
+      Song:           els.eSong.value,
+      VersionLabel:   els.eVersionLabel.value,
+      VersionArtist:  els.eVersionArtist.value,
+      Arrangement:    els.eArrangement.value,
+      Language:       els.eLanguage.value,
+      Theme:          els.eTheme.value,
+      Key:            els.eKey.value,
+      TypicalKeyMale: els.eKeyM.value,
+      TypicalKeyFemale: els.eKeyF.value,
+      LinkAudio:      els.eAudio.value,
+      LinkLyrics:     els.eLyricsLink.value,
+      Lyrics:         els.eLyrics.value,
+      ContextNotes:   els.eNotes.value,
+      adminUser: els.adminUser.value,
+      adminPin:  els.adminPin.value
+    };
+    const r = await apiPost(body);
+    alert('Updated ✔');
+
+    // Refresh currentRow with returned data, close modal, and re-run search for fresh list
+    currentRow = r.row;
+    els.modal.classList.remove('open');
+    document.getElementById('btnSearch').click();
+  }catch(e){ alert(e.message||e); }
+});
+
   els.mClose.addEventListener('click', ()=> els.modal.classList.remove('open'));
   els.modal.addEventListener('click', (e)=>{ if(e.target===els.modal) els.modal.classList.remove('open'); });
 
