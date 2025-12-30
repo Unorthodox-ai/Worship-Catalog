@@ -173,53 +173,16 @@
   </div>
 
   <!-- Details Modal -->
-  <div id="modal" class="modal">
-    <div class="panel card">
-      <div class="head"><span id="mTitle">Song</span><button class="btn" id="mClose">Close</button></div>
-      <div style="padding:12px" class="grid g-3">
-        <div>
-          <div class="muted">Version</div>
-          <div id="mVersion"></div>
-        </div>
-        <div>
-          <div class="muted">Artist</div>
-          <div id="mArtist"></div>
-        </div>
-        <div>
-          <div class="muted">Slug</div>
-          <div id="mSlug"></div>
-        </div>
-        <div>
-          <div class="muted">Language</div>
-          <div id="mLang"></div>
-        </div>
-        <div>
-          <div class="muted">Theme</div>
-          <div id="mTheme"></div>
-        </div>
-        <div>
-          <div class="muted">Key / Male / Female</div>
-          <div id="mKeys"></div>
-        </div>
-        <div style="grid-column:1/-1">
-          <div class="muted">Audio</div>
-          <div><a id="mAudio" href="#" target="_blank"></a></div>
-        </div>
-        <div style="grid-column:1/-1">
-          <div class="muted">Lyrics Link</div>
-          <div><a id="mLyricsLink" href="#" target="_blank"></a></div>
-        </div>
-        <div style="grid-column:1/-1">
-          <div class="muted">Lyrics</div>
-          <pre id="mLyrics" style="white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:10px"></pre>
-        </div>
-        <div style="grid-column:1/-1">
-          <div class="muted">Context Notes</div>
-          <pre id="mNotes" style="white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:10px"></pre>
-        </div>
-      </div>
+  <div class="head">
+    <span id="mTitle">Song</span>
+    <div class="row">
+      <button class="btn" id="mEdit">Edit</button>
+      <button class="btn primary" id="mSave" style="display:none">Save</button>
+      <button class="btn" id="mCancel" style="display:none">Cancel</button>
+      <button class="btn" id="mClose">Close</button>
     </div>
   </div>
+
 
 <script>
 (function(){
