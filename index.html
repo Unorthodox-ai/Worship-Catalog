@@ -76,8 +76,8 @@
         <div class="head">Search</div>
         <div class="grid g-5" style="padding:12px">
           <input id="qSong" class="input" placeholder="Song (e.g., Hosanna)" />
-          <select id="qTheme" placeholder="Theme" ></select>
-          <select id="qLanguage" placeholder="Language" ></select>
+          <select id="qTheme"></select>
+          <select id="qLanguage"></select>
           <input id="qKey" class="input" placeholder="Key (e.g., G)" />
           <button class="btn primary" id="btnSearch">Search</button>
           <details style="grid-column:1/-1"><summary class="muted">Advanced filters</summary>
@@ -313,11 +313,32 @@
     if(!r.ok) throw new Error(`GET ${params.action} ${r.status}`);
     return r.json();
   }
-  async function apiPost(body){
-    const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL');
-    const r = await fetch(base, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
-    if(!r.ok) throw new Error(`POST ${body.action} ${r.status}`);
-    return r.json();
+  async function apiPost(body) {
+    const base = document.getElementById('apiBase').value.trim();
+    if (!/^https?:\/\//.test(base)) throw new Error('Set API URL');
+
+    // First try JSON (should work when deployment access is correct)
+    try {
+      const r = await fetch(base, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        redirect: 'follow',
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(`POST ${body.action} ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      // Fallback: send as x-www-form-urlencoded (no JSON headers → fewer preflight issues)
+      const params = new URLSearchParams(Object.entries(body).map(([k,v])=>[k, typeof v==='object'? JSON.stringify(v): (v ?? '')]));
+      const r2 = await fetch(base, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        redirect: 'follow',
+        body: params.toString()
+      });
+      if (!r2.ok) throw new Error(`POST(Fallback) ${body.action} ${r2.status}`);
+      return await r2.json();
+    }
   }
 
   // tabs
