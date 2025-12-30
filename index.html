@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Worship Song Selector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <meta name="description" content="Search & plan worship sets. Add songs, review queue, comments, and Sunday planner." />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-4">
+    <header class="flex items-center gap-3 mb-4">
+      <h1 class="text-2xl font-semibold">Worship Song Selector</h1>
+      <span class="text-xs text-slate-400">v1</span>
+      <div class="ml-auto flex items-center gap-2">
+        <input id="apiBase" class="w-[26rem] max-w-[60vw] rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-xs" placeholder="Paste your Apps Script Web App URL (ends /exec)" />
+        <button id="saveApi" class="text-xs px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500">Save</button>
+      </div>
+    </header>
+
+    <nav class="flex gap-2 mb-4">
+      <button data-tab="search" class="tabbtn px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Search</button>
+      <button data-tab="add" class="tabbtn px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Add Song</button>
+      <button data-tab="review" class="tabbtn px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Review Queue</button>
+      <button data-tab="planner" class="tabbtn px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Sunday Planner</button>
+      <div class="ml-auto flex items-center gap-2 text-xs">
+        <input id="adminUser" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="Admin user (as in Users sheet)"/>
+        <input id="adminPin" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="Admin PIN"/>
+      </div>
+    </nav>
+
+    <!-- SEARCH TAB -->
+    <section id="tab-search" class="tab hidden">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div class="md:col-span-2">
+          <label class="text-xs text-slate-400">Search</label>
+          <input id="q" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2" placeholder="Title, theme, lyrics, language" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Language</label>
+          <select id="lang" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2"></select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Key</label>
+          <select id="key" class="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2">
+            <option value="">Any</option>
+            <option>C</option><option>Db</option><option>D</option><option>Eb</option><option>E</option><option>F</option><option>Gb</option><option>G</option><option>Ab</option><option>A</option><option>Bb</option><option>B</option>
+            <option>Am</option><option>Bm</option><option>Cm</option><option>Dm</option><option>Em</option><option>Fm</option><option>Gm</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        <button id="themeBtn" class="text-xs px-3 py-1 rounded-full bg-slate-800 border border-slate-700">Themes…</button>
+        <span id="themeChips" class="text-xs text-slate-400"></span>
+        <button id="searchBtn" class="ml-auto px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500">Search</button>
+      </div>
+
+      <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-800">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-900 text-slate-300">
+            <tr>
+              <th class="text-left p-3">Song</th>
+              <th class="text-left p-3">Theme</th>
+              <th class="text-left p-3">Language</th>
+              <th class="text-left p-3">Key</th>
+              <th class="text-left p-3"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y divide-slate-800 bg-slate-950"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ADD SONG TAB -->
+    <section id="tab-add" class="tab hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-400">Song *</label>
+          <input id="fSong" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="Title (add version if needed)"/>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Key</label>
+          <input id="fKey" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="G / Eb / Am / Unknown"/>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Theme(s) *</label>
+          <input id="fTheme" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="Adoration, Praise"/>
+          <p class="text-[11px] text-slate-400 mt-1">Use 1–2 from the list; new themes will be added upon approval.</p>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Language(s) *</label>
+          <input id="fLang" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="English, French"/>
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-xs text-slate-400">Lyrics (full text)</label>
+          <textarea id="fLyrics" rows="6" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="Paste lyrics text here (respect copyright)"></textarea>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">LinkAudio</label>
+          <input id="fLinkAudio" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="https://"/>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">LinkLyrics</label>
+          <input id="fLinkLyrics" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="https://"/>
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-xs text-slate-400">Context Notes</label>
+          <textarea id="fNotes" rows="3" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="When to use, transitions, scripture cues"></textarea>
+        </div>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button id="submitSong" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500">Submit to Review</button>
+        <span id="addMsg" class="text-xs text-slate-400"></span>
+      </div>
+    </section>
+
+    <!-- REVIEW QUEUE TAB (Admin) -->
+    <section id="tab-review" class="tab hidden">
+      <div class="flex items-center gap-2 mb-2">
+        <button id="refreshQueue" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Refresh</button>
+        <span class="text-xs text-slate-400">Enter Admin user + PIN above to approve/reject</span>
+      </div>
+      <div id="queue" class="space-y-2"></div>
+    </section>
+
+    <!-- SUNDAY PLANNER TAB -->
+    <section id="tab-planner" class="tab hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+        <div>
+          <label class="text-xs text-slate-400">Title</label>
+          <input id="pTitle" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="Sunday 10:30am"/>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Date (YYYY-MM-DD)</label>
+          <input id="pDate" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="2025-12-21"/>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">ServiceTimes</label>
+          <input id="pTimes" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="10:30"/>
+        </div>
+        <div class="md:col-span-3">
+          <label class="text-xs text-slate-400">Theme Focus</label>
+          <input id="pFocus" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="Resurrection / Hope"/>
+        </div>
+        <div class="md:col-span-3">
+          <label class="text-xs text-slate-400">Notes</label>
+          <textarea id="pNotes" rows="2" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2"></textarea>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mb-4">
+        <button id="createPlan" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500">Create Plan</button>
+        <span id="planMsg" class="text-xs text-slate-400"></span>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="font-semibold mb-2">Plans</h3>
+          <div id="plans" class="space-y-2"></div>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Items</h3>
+          <div id="planItems" class="space-y-2"></div>
+          <div id="addItemBox" class="mt-3 p-3 rounded-xl bg-slate-900 border border-slate-800 hidden">
+            <div class="grid grid-cols-2 gap-2">
+              <input id="itOrder" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="#"/>
+              <input id="itPart" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="Service Part"/>
+              <input id="itSongID" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="SongID (SNG_...)"/>
+              <input id="itKey" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="KeyOverride"/>
+              <input id="itLeader" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="Leader"/>
+              <input id="itTrans" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="Transitions"/>
+              <input id="itNotes" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="Notes"/>
+            </div>
+            <button id="addItem" class="mt-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Add Item</button>
+          </div>
+          <div class="mt-4">
+            <h3 class="font-semibold mb-2">Plan Comments</h3>
+            <div id="planComments" class="space-y-2"></div>
+            <div class="grid grid-cols-1 gap-2 mt-2">
+              <input id="pcName" class="rounded bg-slate-900 border border-slate-700 px-2 py-1" placeholder="Your name (optional)"/>
+              <textarea id="pcText" rows="3" class="rounded bg-slate-900 border border-slate-700 px-2 py-2" placeholder="Comment on plan"></textarea>
+              <button id="pcAdd" class="justify-self-start px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Add Comment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Song Drawer -->
+  <div id="drawer" class="fixed inset-y-0 right-0 w-full sm:w-[32rem] bg-slate-900 border-l border-slate-800 shadow-2xl translate-x-full transition-transform duration-300 z-50 flex flex-col">
+    <div class="p-4 border-b border-slate-800 flex items-start gap-3">
+      <button id="drawerClose" class="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700">Close</button>
+      <div class="grow">
+        <h3 id="dTitle" class="text-lg font-semibold leading-tight"></h3>
+        <div class="mt-1 text-xs text-slate-400" id="dMeta"></div>
+        <div class="mt-2 flex flex-wrap gap-2" id="dLinks"></div>
+      </div>
+      <button id="shareSongBtn" class="text-xs px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500">Copy link</button>
+    </div>
+    <div class="p-4 flex gap-2 text-sm">
+      <button id="tabLyrics" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Lyrics</button>
+      <button id="tabComments" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700">Comments</button>
+    </div>
+    <div id="panelLyrics" class="px-4 pb-20 overflow-y-auto text-sm whitespace-pre-wrap leading-6 hidden"></div>
+    <div id="panelComments" class="px-4 pb-32 overflow-y-auto hidden">
+      <div id="commentsList" class="space-y-3"></div>
+      <div class="sticky bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 mt-4">
+        <div class="grid grid-cols-1 gap-2">
+          <input id="cName" type="text" placeholder="Your name (optional)" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 outline-none">
+          <textarea id="cText" rows="3" placeholder="Add a team comment" class="w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 outline-none"></textarea>
+          <button id="cAdd" class="justify-self-end px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500">Add comment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*************** Config ***************/
+const API_BASE = localStorage.getItem('apiBase') || '';
+const ADMIN_USER = localStorage.getItem('adminUser') || '';
+const ADMIN_PIN = localStorage.getItem('adminPin') || '';
+
+/*************** Helpers ***************/
+const $ = (id) => document.getElementById(id);
+function setTab(name){ document.querySelectorAll('.tab').forEach(el=>el.classList.add('hidden')); $(`tab-${name}`).classList.remove('hidden'); document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('bg-indigo-600')); document.querySelector(`[data-tab="${name}"]`).classList.add('bg-indigo-600'); }
+function apiGet(path){ return fetch(getBase()+path).then(r=>r.json()); }
+function apiPost(body){ return fetch(getBase(), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}).then(r=>r.json()); }
+function getBase(){ const b = localStorage.getItem('apiBase')||''; if(!b) alert('Paste your Apps Script Web App URL at the top and click Save'); return b; }
+function esc(s){ return String(s||'').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
+
+/*************** Init UI ***************/
+// top controls
+$('apiBase').value = API_BASE; $('adminUser').value = ADMIN_USER; $('adminPin').value = ADMIN_PIN;
+$('saveApi').onclick = ()=>{ localStorage.setItem('apiBase', $('apiBase').value.trim()); localStorage.setItem('adminUser', $('adminUser').value.trim()); localStorage.setItem('adminPin', $('adminPin').value.trim()); alert('Saved.'); };
+
+document.querySelectorAll('.tabbtn').forEach(btn=>btn.onclick=()=>setTab(btn.dataset.tab));
+setTab('search');
+
+/*************** Lookups ***************/
+let LOOKUPS = { themes:[], languages:[], serviceParts:[] };
+async function loadLookups(){
+  const res = await apiGet('?action=listLookups'); LOOKUPS = res; // populate lang select
+  const langSel = $('lang'); langSel.innerHTML = '<option value="">Any</option>' + LOOKUPS.languages.map(l=>`<option>${esc(l)}</option>`).join('');
+}
+loadLookups();
+
+/*************** Search ***************/
+let selectedThemes = [];
+$('themeBtn').onclick = ()=>{
+  const pick = prompt('Enter themes separated by commas.\nAvailable: '+LOOKUPS.themes.join(', '), selectedThemes.join(', '));
+  if (pick!=null){ selectedThemes = pick.split(',').map(s=>s.trim()).filter(Boolean); renderThemeChips(); }
+};
+function renderThemeChips(){ $('themeChips').innerHTML = selectedThemes.length? ('Themes: '+selectedThemes.join(', ')) : 'No themes'; }
+renderThemeChips();
+
+$('searchBtn').onclick = async ()=>{
+  const q = $('q').value.trim(); const lang = $('lang').value.trim(); const key = $('key').value.trim();
+  const themes = selectedThemes.join('|');
+  const url = `?action=listSongs&q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}&key=${encodeURIComponent(key)}&themes=${encodeURIComponent(themes)}`;
+  const res = await apiGet(url);
+  const tbody = $('tbody'); tbody.innerHTML = '';
+  (res.rows||[]).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="p-3">${esc(r.Song)}</td>
+      <td class="p-3 text-slate-300">${esc(r.Theme)}</td>
+      <td class="p-3">${esc(r.Language)}</td>
+      <td class="p-3">${esc(r.Key)}</td>
+      <td class="p-3 text-right"><button class="text-xs px-3 py-1 rounded bg-slate-800 border border-slate-700" data-open="${esc(r.Slug||'')}" data-id="${esc(r.SongID||'')}">Open</button></td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('button[data-open]').forEach(b=>b.onclick=()=>openDrawer(b.dataset.open||'', b.dataset.id||''));
+};
+
+/*************** Add Song ***************/
+$('submitSong').onclick = async ()=>{
+  const body = {
+    action:'submitSong',
+    Song: $('fSong').value.trim(), Theme: $('fTheme').value.trim(), Language: $('fLang').value.trim(), Key: $('fKey').value.trim(),
+    Lyrics: $('fLyrics').value, LinkAudio: $('fLinkAudio').value.trim(), LinkLyrics: $('fLinkLyrics').value.trim(), ContextNotes: $('fNotes').value,
+    SubmittedBy: $('adminUser').value.trim() || 'anonymous'
+  };
+  if (!body.Song || !body.Theme || !body.Language){ $('addMsg').textContent = 'Song, Theme, Language are required.'; return; }
+  const res = await apiPost(body);
+  $('addMsg').textContent = res.ok? 'Submitted for review.' : ('Error: '+(res.error||'unknown'));
+};
+
+/*************** Review Queue ***************/
+$('refreshQueue').onclick = async ()=>{
+  const res = await apiGet('?action=listreviewqueue');
+  const box = $('queue'); box.innerHTML = '';
+  (res.rows||[]).filter(r=>String(r.Status||'').toLowerCase()==='pending').forEach(r=>{
+    const div = document.createElement('div'); div.className='p-3 rounded-xl bg-slate-900 border border-slate-800';
+    div.innerHTML = `
+      <div class="font-semibold">${esc(r.Song)} <span class="text-xs text-slate-400">(row ${r.rowIndex})</span></div>
+      <div class="text-xs text-slate-400">${esc(r.Language)} • ${esc(r.Theme)} • ${esc(r.Key)}</div>
+      <div class="mt-2 flex gap-2">
+        <button class="px-3 py-1 rounded bg-indigo-600" data-approve="${r.rowIndex}">Approve</button>
+        <button class="px-3 py-1 rounded bg-slate-800 border border-slate-700" data-reject="${r.rowIndex}">Reject</button>
+      </div>`;
+    box.appendChild(div);
+  });
+  box.querySelectorAll('button[data-approve]').forEach(b=>b.onclick=()=>approveRow(b.dataset.approve));
+  box.querySelectorAll('button[data-reject]').forEach(b=>b.onclick=()=>rejectRow(b.dataset.reject));
+};
+async function approveRow(rowIndex){
+  const res = await apiPost({ action:'approveSong', rowIndex:Number(rowIndex), adminPin:$('adminPin').value.trim(), adminUser:$('adminUser').value.trim() });
+  alert(res.ok? 'Approved' : ('Error: '+(res.error||'unknown'))); $('refreshQueue').click();
+}
+async function rejectRow(rowIndex){
+  const note = prompt('Reason (optional)')||'';
+  const res = await apiPost({ action:'rejectSong', rowIndex:Number(rowIndex), adminPin:$('adminPin').value.trim(), adminUser:$('adminUser').value.trim(), note });
+  alert(res.ok? 'Rejected' : ('Error: '+(res.error||'unknown'))); $('refreshQueue').click();
+}
+
+/*************** Drawer (Lyrics & Comments) ***************/
+let currentSong = null;
+async function openDrawer(slug, songId){
+  const info = slug? (await apiGet(`?action=getSongBySlug&slug=${encodeURIComponent(slug)}`)).row : null;
+  currentSong = info || { SongID:songId };
+  $('dTitle').textContent = info? info.Song : (songId||'Song');
+  $('dMeta').textContent = `${info?.Language||''} • ${info?.Theme||''} • ${info?.Key||''}`;
+  $('panelLyrics').textContent = info?.Lyrics || '';
+  $('dLinks').innerHTML = '';
+  if (info?.LinkAudio) addLink('Audio', info.LinkAudio);
+  if (info?.LinkLyrics) addLink('Lyrics', info.LinkLyrics);
+  loadComments();
+  $('drawer').classList.remove('translate-x-full');
+}
+function addLink(label,url){ const a=document.createElement('a'); a.href=url; a.target='_blank'; a.className='text-xs underline'; a.textContent=label; $('dLinks').appendChild(a); }
+$('drawerClose').onclick = ()=> $('drawer').classList.add('translate-x-full');
+$('tabLyrics').onclick = ()=>{ $('panelLyrics').classList.remove('hidden'); $('panelComments').classList.add('hidden'); };
+$('tabComments').onclick = ()=>{ $('panelComments').classList.remove('hidden'); $('panelLyrics').classList.add('hidden'); };
+
+async function loadComments(){
+  if (!currentSong?.SongID){ $('commentsList').innerHTML = '<div class="text-xs text-slate-400">No SongID.</div>'; return; }
+  const res = await apiGet(`?action=listComments&songId=${encodeURIComponent(currentSong.SongID)}`);
+  const box = $('commentsList'); box.innerHTML = '';
+  (res.rows||[]).forEach(c=>{
+    const d = document.createElement('div'); d.className='p-2 rounded bg-slate-900 border border-slate-800 text-sm';
+    d.innerHTML = `<div class="text-slate-300">${esc(c.Comment)}</div><div class="text-[11px] text-slate-500 mt-1">${esc(c.Name||'')} — ${esc(c.Timestamp)}</div>`;
+    box.appendChild(d);
+  });
+}
+$('cAdd').onclick = async ()=>{
+  if (!currentSong?.SongID) return alert('Missing SongID');
+  const res = await apiPost({ action:'addComment', SongID: currentSong.SongID, Name: $('cName').value.trim(), Comment: $('cText').value.trim() });
+  if (res.ok){ $('cText').value=''; loadComments(); }
+};
+
+/*************** Planner ***************/
+let currentPlanID = null;
+$('createPlan').onclick = async ()=>{
+  const res = await apiPost({ action:'createplan', Title:$('pTitle').value.trim(), Date:$('pDate').value.trim(), ServiceTimes:$('pTimes').value.trim(), ThemeFocus:$('pFocus').value.trim(), Notes:$('pNotes').value.trim(), adminPin:$('adminPin').value.trim(), adminUser:$('adminUser').value.trim() });
+  $('planMsg').textContent = res.ok? 'Plan created.' : ('Error: '+(res.error||'unknown'));
+  loadPlans();
+};
+async function loadPlans(){
+  const res = await apiGet('?action=listplans'); const list = $('plans'); list.innerHTML='';
+  (res.rows||[]).forEach(p=>{
+    const div=document.createElement('div'); div.className='p-3 rounded-xl bg-slate-900 border border-slate-800';
+    div.innerHTML = `<div class="font-semibold">${esc(p.Date)} — ${esc(p.Title)}</div><div class="text-xs text-slate-400">${esc(p.ServiceTimes)} • ${esc(p.Status)}</div><div class="mt-2 flex gap-2"><button class="px-3 py-1 rounded bg-slate-800 border border-slate-700" data-open="${esc(p.PlanID)}">Open</button><button class="px-3 py-1 rounded bg-slate-800 border border-slate-700" data-final="${esc(p.PlanID)}">Finalize</button></div>`;
+    list.appendChild(div);
+  });
+  list.querySelectorAll('button[data-open]').forEach(b=>b.onclick=()=>openPlan(b.dataset.open));
+  list.querySelectorAll('button[data-final]').forEach(b=>b.onclick=()=>setPlanStatus(b.dataset.final,'Final'));
+}
+async function openPlan(id){ currentPlanID = id; $('addItemBox').classList.remove('hidden'); loadPlanItems(); loadPlanComments(); }
+async function setPlanStatus(id,status){ await apiPost({ action:'setplanstatus', PlanID:id, Status:status, adminPin:$('adminPin').value.trim(), adminUser:$('adminUser').value.trim() }); loadPlans(); }
+async function loadPlanItems(){ const res = await apiGet(`?action=listplanitems&PlanID=${encodeURIComponent(currentPlanID)}`); const box=$('planItems'); box.innerHTML=''; (res.rows||[]).forEach(it=>{ const d=document.createElement('div'); d.className='p-2 rounded bg-slate-900 border border-slate-800 text-sm'; d.textContent = `#${it.Order} • ${it.ServicePart} • ${it.SongID} • ${it.KeyOverride||''}`; box.appendChild(d); }); }
+$('addItem').onclick = async ()=>{ const body = { action:'addplanitem', PlanID:currentPlanID, Order:Number($('itOrder').value||0), ServicePart:$('itPart').value.trim(), SongID:$('itSongID').value.trim(), KeyOverride:$('itKey').value.trim(), Leader:$('itLeader').value.trim(), Transitions:$('itTrans').value.trim(), Notes:$('itNotes').value.trim(), adminPin:$('adminPin').value.trim(), adminUser:$('adminUser').value.trim() }; const res=await apiPost(body); if(res.ok){ $('itOrder').value=''; $('itPart').value=''; $('itSongID').value=''; $('itKey').value=''; $('itLeader').value=''; $('itTrans').value=''; $('itNotes').value=''; loadPlanItems(); } else alert(res.error||'Error'); };
+async function loadPlanComments(){ const res = await apiGet(`?action=listplancomments&PlanID=${encodeURIComponent(currentPlanID)}`); const box=$('planComments'); box.innerHTML=''; (res.rows||[]).forEach(c=>{ const d=document.createElement('div'); d.className='p-2 rounded bg-slate-900 border border-slate-800 text-sm'; d.innerHTML = `<div class="text-slate-300">${esc(c.Comment)}</div><div class="text-[11px] text-slate-500 mt-1">${esc(c.Name||'')} — ${esc(c.Timestamp)}</div>`; box.appendChild(d); }); }
+$('pcAdd').onclick = async ()=>{ if(!currentPlanID) return alert('Open a plan first'); const res=await apiPost({ action:'addplancomment', PlanID:currentPlanID, Name:$('pcName').value.trim(), Comment:$('pcText').value.trim() }); if(res.ok){ $('pcText').value=''; loadPlanComments(); } };
+
+// Boot
+loadPlans();
+</script>
+</body>
+</html>
