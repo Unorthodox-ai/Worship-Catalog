@@ -1,416 +1,495 @@
-import React, { useEffect, useMemo, useState } from "react";
-
-/**
- * Worship Catalog Frontend v2 (single-file React)
- * - Works with the Apps Script backend v2 you deployed.
- * - Paste your Web App URL below (or set via the top-right Settings panel).
- * - Features:
- *   • Catalog search (Song/Theme/Language/Key + advanced filters)
- *   • Add Song → Review Queue (pending)
- *   • Review Queue (Admin): approve/reject/bulk approve (needs Admin User + PIN)
- *   • Song details modal (links, notes, keys)
- *
- * Notes:
- * - Data model matches the backend (SongID, Song, VersionLabel, ... Slug, Status)
- * - Lookups (themes/languages/serviceParts) are fetched from backend
- * - Stores API base URL, adminUser, adminPin in localStorage (client-side convenience only)
- */
-
-const DEFAULT_API = ""; // ← Paste Apps Script Web App URL here (ends with /exec)
-
-const COLS = [
-  "SongID","Song","VersionLabel","VersionArtist","Arrangement","Language","Theme","Key",
-  "TypicalKeyMale","TypicalKeyFemale","Lyrics","LinkAudio","LinkLyrics","ContextNotes",
-  "CreatedAt","CreatedBy","UpdatedAt","UpdatedBy","Slug","Status"
-];
-
-function useLocalStorage(key, initialValue) {
-  const [val, setVal] = useState(() => {
-    try {
-      const v = localStorage.getItem(key);
-      return v !== null ? JSON.parse(v) : initialValue;
-    } catch { return initialValue; }
-  });
-  useEffect(()=>{ try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }, [key,val]);
-  return [val, setVal];
-}
-
-async function apiGet(base, params) {
-  const qs = new URLSearchParams(params);
-  const res = await fetch(`${base}?${qs.toString()}`);
-  if (!res.ok) throw new Error(`GET ${params.action} failed: ${res.status}`);
-  return res.json();
-}
-async function apiPost(base, body) {
-  const res = await fetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`POST ${body.action} failed: ${res.status}`);
-  return res.json();
-}
-
-function Badge({ children }) {
-  return <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">{children}</span>
-}
-
-function Input({ label, ...props }) {
-  return (
-    <label className="block">
-      {label && <span className="mb-1 block text-xs text-gray-600">{label}</span>}
-      <input {...props} className={`w-full rounded-xl border px-3 py-2 outline-none focus:ring ${props.className||''}`} />
-    </label>
-  );
-}
-function Select({ label, options, value, onChange, placeholder }){
-  return (
-    <label className="block">
-      {label && <span className="mb-1 block text-xs text-gray-600">{label}</span>}
-      <select className="w-full rounded-xl border px-3 py-2" value={value||""} onChange={e=>onChange(e.target.value||"") }>
-        <option value="">{placeholder||"--"}</option>
-        {options.map(o=> <option key={o} value={o}>{o}</option>)}
-      </select>
-    </label>
-  );
-}
-function TextArea({ label, ...props }){
-  return (
-    <label className="block">
-      {label && <span className="mb-1 block text-xs text-gray-600">{label}</span>}
-      <textarea {...props} className={`w-full rounded-xl border px-3 py-2 outline-none focus:ring ${props.className||''}`}/>
-    </label>
-  )
-}
-
-export default function App(){
-  const [apiBase, setApiBase] = useLocalStorage('wc_api_base', DEFAULT_API);
-  const [adminUser, setAdminUser] = useLocalStorage('wc_admin_user', "");
-  const [adminPin, setAdminPin]   = useLocalStorage('wc_admin_pin', "");
-
-  const [lookups, setLookups] = useState({ themes:[], languages:[], serviceParts:[] });
-  const [health, setHealth] = useState(null);
-
-  const [tab, setTab] = useState('catalog'); // 'catalog' | 'add' | 'review'
-
-  // Catalog/search state
-  const [qSong, setQSong] = useState("");
-  const [qTheme, setQTheme] = useState("");
-  const [qLanguage, setQLanguage] = useState("");
-  const [qKey, setQKey] = useState("");
-  const [qAdvOpen, setQAdvOpen] = useState(false);
-  const [qVersionLabel, setQVersionLabel] = useState("");
-  const [qVersionArtist, setQVersionArtist] = useState("");
-  const [qArrangement, setQArrangement] = useState("");
-  const [catalog, setCatalog] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const [selected, setSelected] = useState(null);
-
-  // Add Song form
-  const [form, setForm] = useState({
-    Song:"", VersionLabel:"", VersionArtist:"", Arrangement:"",
-    Language:"", Theme:"", Key:"", TypicalKeyMale:"", TypicalKeyFemale:"",
-    LinkAudio:"", LinkLyrics:"", Lyrics:"", ContextNotes:"", CreatedBy:""
-  });
-  const formDisabled = !form.Song;
-
-  // Review Queue
-  const [review, setReview] = useState([]);
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [bulkSel, setBulkSel] = useState({});
-
-  const canCall = useMemo(()=> apiBase && /^https?:\/\//.test(apiBase), [apiBase]);
-
-  async function refreshHealth(){
-    setErr("");
-    if (!canCall) return;
-    try{
-      const r = await apiGet(apiBase, { action:'health' });
-      setHealth(r);
-    } catch(e){ setErr(String(e.message||e)); }
-  }
-  async function refreshLookups(){
-    setErr("");
-    if (!canCall) return;
-    try {
-      const r = await apiGet(apiBase, { action:'listLookups' });
-      setLookups(r);
-    } catch(e){ setErr(String(e.message||e)); }
-  }
-  async function search(){
-    setErr(""); setLoading(true);
-    try{
-      const r = await apiGet(apiBase, {
-        action:'searchSongs',
-        song:qSong, theme:qTheme, language:qLanguage, key:qKey,
-        versionlabel:qVersionLabel, versionartist:qVersionArtist, arrangement:qArrangement
-      });
-      setCatalog(r.rows||[]);
-    }catch(e){ setErr(String(e.message||e)); }
-    finally{ setLoading(false); }
-  }
-  async function loadReview(){
-    setErr(""); setReviewLoading(true);
-    try{
-      const r = await apiGet(apiBase, { action:'listReview' });
-      setReview(r.rows||[]);
-      setBulkSel({});
-    }catch(e){ setErr(String(e.message||e)); }
-    finally{ setReviewLoading(false); }
-  }
-
-  async function addToReview(){
-    if (!canCall) return alert('Set API base first');
-    try{
-      const body = { action:'addToReviewQueue', ...form };
-      const r = await apiPost(apiBase, body);
-      alert(`Sent to review (row ${r.rowIndex}).`);
-      setForm({
-        Song:"", VersionLabel:"", VersionArtist:"", Arrangement:"",
-        Language:"", Theme:"", Key:"", TypicalKeyMale:"", TypicalKeyFemale:"",
-        LinkAudio:"", LinkLyrics:"", Lyrics:"", ContextNotes:"", CreatedBy:""
-      });
-      setTab('review');
-      loadReview();
-    }catch(e){ alert(String(e.message||e)); }
-  }
-
-  async function approveRow(rowIndex){
-    if (!adminUser || !adminPin) return alert('Set Admin User & PIN in Settings');
-    try{
-      const r = await apiPost(apiBase, { action:'approveReviewRow', rowIndex, adminUser, adminPin });
-      await loadReview();
-      alert(`Approved → ${r.slug}`);
-    }catch(e){ alert(String(e.message||e)); }
-  }
-  async function rejectRow(rowIndex){
-    if (!adminUser || !adminPin) return alert('Set Admin User & PIN in Settings');
-    try{
-      await apiPost(apiBase, { action:'rejectReviewRow', rowIndex, adminUser, adminPin });
-      await loadReview();
-    }catch(e){ alert(String(e.message||e)); }
-  }
-  async function bulkApprove(){
-    const rows = Object.keys(bulkSel).filter(k=>bulkSel[k]).map(k=>parseInt(k,10));
-    if (!rows.length) return alert('Select at least one');
-    if (!adminUser || !adminPin) return alert('Set Admin User & PIN in Settings');
-    try{
-      const r = await apiPost(apiBase, { action:'bulkApprove', rowIndices: rows, adminUser, adminPin });
-      await loadReview();
-      alert(`Bulk approved: ${r.results.filter(x=>x.ok).length}/${r.results.length}`);
-    }catch(e){ alert(String(e.message||e)); }
-  }
-
-  useEffect(()=>{ if (canCall){ refreshHealth(); refreshLookups(); } }, [canCall]);
-
-  const topBar = (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <span className="text-lg font-semibold">Worship Catalog</span>
-        {health?.ok && <Badge>Online</Badge>}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wells Salvation - Worship Catalog</title>
+  <style>
+    :root{--bg:#ffffff;--fg:#111;--muted:#666;--line:#e6e6e6;--accent:#0b57d0;--chip:#f3f4f6;--danger:#b00020;}
+    *{box-sizing:border-box} html,body{height:100%} body{margin:0;font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;color:var(--fg);background:var(--bg)}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+    .top{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0}
+    .brand{display:flex;gap:10px;align-items:center}
+    .brand h1{font-size:18px;margin:0;font-weight:650}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:#333}
+    .row{display:flex;gap:10px;align-items:center}
+    .input, select, textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;outline:none}
+    .input:focus, select:focus, textarea:focus{border-color:var(--accent)}
+    .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.danger{background:#fff;border-color:var(--danger);color:var(--danger)}
+    .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-top:10px}
+    .tab{padding:8px 12px;border:1px solid var(--line);border-bottom:none;border-top-left-radius:10px;border-top-right-radius:10px;background:#fafafa;cursor:pointer}
+    .tab.active{background:#fff;border-color:var(--accent);color:var(--accent)}
+    .card{border:1px solid var(--line);border-radius:12px;background:#fff}
+    .card .head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);color:var(--muted)}
+    .grid{display:grid;gap:10px}
+    .g-3{grid-template-columns:repeat(3,1fr)}
+    .g-4{grid-template-columns:repeat(4,1fr)}
+    .g-5{grid-template-columns:repeat(5,1fr)}
+    @media (max-width:900px){.g-5,.g-4{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;vertical-align:top;border-top:1px solid var(--line)}
+    th{font-weight:600;text-align:left;background:#fafafa}
+    .muted{color:var(--muted)}
+    .list-row{cursor:pointer}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .hidden{display:none}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px}
+    .modal.open{display:flex}
+    .modal .panel{max-width:750px;width:100%;max-height:90vh;overflow:auto}
+    .row-end{display:flex;gap:10px;justify-content:flex-end}
+    .settings{border:1px dashed var(--line);border-radius:10px;padding:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <h1>Worship Catalog</h1>
+        <span id="healthChip" class="chip">Offline</span>
       </div>
-      <div className="flex items-center gap-2">
-        <Input placeholder="https://script.google.com/.../exec" value={apiBase} onChange={e=>setApiBase(e.target.value)} />
-        <details className="ml-2">
-          <summary className="cursor-pointer select-none rounded-xl border px-3 py-2 text-sm">Settings</summary>
-          <div className="mt-2 grid gap-2 rounded-xl border p-3">
-            <Input label="Admin User (must match Users sheet Name or Email)" value={adminUser} onChange={e=>setAdminUser(e.target.value)} />
-            <Input label="Admin PIN (Config → ADMIN_PIN)" value={adminPin} onChange={e=>setAdminPin(e.target.value)} />
-            <button className="rounded-xl bg-black px-3 py-2 text-white" onClick={()=>{refreshHealth(); refreshLookups();}}>Test Connection</button>
-          </div>
-        </details>
+      <div class="row" style="gap:6px">
+        <input id="apiBase" class="input" placeholder="Paste Apps Script Web App URL (…/exec)" />
+        <button class="btn" id="btnTest">Test</button>
       </div>
-    </div>
-  );
+    </header>
 
-  return (
-    <div className="mx-auto max-w-6xl p-4 font-sans">
-      {topBar}
-      <div className="mt-4 flex gap-2">
-        <button onClick={()=>setTab('catalog')} className={`rounded-xl px-3 py-2 ${tab==='catalog'?'bg-black text-white':'border'}`}>Catalog</button>
-        <button onClick={()=>setTab('add')} className={`rounded-xl px-3 py-2 ${tab==='add'?'bg-black text-white':'border'}`}>Add Song</button>
-        <button onClick={()=>{setTab('review'); loadReview();}} className={`rounded-xl px-3 py-2 ${tab==='review'?'bg-black text-white':'border'}`}>Review Queue</button>
+    <section class="settings" style="margin-bottom:10px">
+      <div class="grid g-4">
+        <input id="adminUser" class="input" placeholder="Admin User (Name or Email in Users sheet)" />
+        <input id="adminPin" class="input" placeholder="ADMIN_PIN" />
+        <button class="btn" id="btnSaveSettings">Save Settings</button>
+        <span class="muted">Saved in your browser only</span>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="catalog">Catalog</button>
+      <button class="tab" data-tab="add">Add Song</button>
+      <button class="tab" data-tab="review">Review Queue</button>
+    </nav>
+
+    <!-- CATALOG -->
+    <section id="view-catalog" class="view" style="margin-top:12px">
+      <div class="card">
+        <div class="head">Search</div>
+        <div class="grid g-5" style="padding:12px">
+          <input id="qSong" class="input" placeholder="Song (e.g., Hosanna)" />
+          <select id="qTheme"></select>
+          <select id="qLanguage"></select>
+          <input id="qKey" class="input" placeholder="Key (e.g., G)" />
+          <button class="btn primary" id="btnSearch">Search</button>
+          <details style="grid-column:1/-1"><summary class="muted">Advanced filters</summary>
+            <div class="grid g-3" style="margin-top:8px">
+              <input id="qVersionLabel" class="input" placeholder="Version Label" />
+              <input id="qVersionArtist" class="input" placeholder="Version Artist" />
+              <input id="qArrangement" class="input" placeholder="Arrangement" />
+            </div>
+          </details>
+        </div>
       </div>
 
-      {err && <div className="mt-3 rounded-xl border border-red-300 bg-red-50 p-2 text-sm text-red-800">{String(err)}</div>}
+      <div class="card" style="margin-top:12px">
+        <div class="head"><span id="resCount" class="muted">0 result(s)</span></div>
+        <div style="overflow-x:auto">
+          <table id="tblCatalog">
+            <thead>
+              <tr>
+                <th>Song</th>
+                <th>Version</th>
+                <th>Artist</th>
+                <th>Language</th>
+                <th>Theme</th>
+                <th>Key</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-      {tab==='catalog' && (
-        <section className="mt-4 space-y-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-            <Input label="Song" placeholder="e.g., Hosanna" value={qSong} onChange={e=>setQSong(e.target.value)} />
-            <Select label="Theme" options={lookups.themes} value={qTheme} onChange={setQTheme} placeholder="Any" />
-            <Select label="Language" options={lookups.languages} value={qLanguage} onChange={setQLanguage} placeholder="Any" />
-            <Input label="Key" placeholder="e.g., G" value={qKey} onChange={e=>setQKey(e.target.value)} />
-            <div className="flex items-end">
-              <button onClick={search} className="w-full rounded-xl bg-black px-3 py-2 text-white">Search</button>
-            </div>
-          </div>
-          <button className="text-sm underline" onClick={()=>setQAdvOpen(s=>!s)}>{qAdvOpen? 'Hide':'Show'} advanced filters</button>
-          {qAdvOpen && (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Input label="Version Label" value={qVersionLabel} onChange={e=>setQVersionLabel(e.target.value)} />
-              <Input label="Version Artist" value={qVersionArtist} onChange={e=>setQVersionArtist(e.target.value)} />
-              <Input label="Arrangement" value={qArrangement} onChange={e=>setQArrangement(e.target.value)} />
-            </div>
-          )}
-
-          <div className="mt-3 rounded-2xl border">
-            <div className="flex items-center justify-between border-b p-3 text-sm text-gray-600">
-              <span>{loading? 'Loading…' : `${catalog.length} result(s)`}</span>
-            </div>
-            <div className="divide-y">
-              {catalog.map((row)=> (
-                <div key={(row.SongID||row.Slug||Math.random())} className="grid cursor-pointer grid-cols-1 gap-2 p-3 hover:bg-gray-50 md:grid-cols-6" onClick={()=>setSelected(row)}>
-                  <div className="md:col-span-2">
-                    <div className="font-medium">{row.Song}</div>
-                    <div className="mt-1 flex flex-wrap gap-1 text-xs text-gray-600">
-                      {row.VersionLabel && <Badge>{row.VersionLabel}</Badge>}
-                      {row.Language && <Badge>{row.Language}</Badge>}
-                      {row.Key && <Badge>Key {row.Key}</Badge>}
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-700">{row.Theme}</div>
-                  <div className="truncate text-sm text-gray-700">{row.VersionArtist}</div>
-                  <div className="truncate text-sm text-gray-700">{row.Arrangement}</div>
-                  <div className="truncate text-xs text-gray-500">{row.ContextNotes}</div>
-                </div>
-              ))}
-              {!catalog.length && !loading && (
-                <div className="p-6 text-center text-sm text-gray-500">No results yet. Try a search.</div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {tab==='add' && (
-        <section className="mt-4 grid gap-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <Input label="Song *" value={form.Song} onChange={e=>setForm(f=>({...f, Song:e.target.value}))} />
-            <Input label="Version Label" placeholder="e.g., Hillsong United (World Edition)" value={form.VersionLabel} onChange={e=>setForm(f=>({...f, VersionLabel:e.target.value}))} />
-            <Input label="Version Artist" value={form.VersionArtist} onChange={e=>setForm(f=>({...f, VersionArtist:e.target.value}))} />
-            <Input label="Arrangement" placeholder="Studio / Live / Hymn / Chorus" value={form.Arrangement} onChange={e=>setForm(f=>({...f, Arrangement:e.target.value}))} />
-            <Select label="Language" options={lookups.languages} value={form.Language} onChange={v=>setForm(f=>({...f, Language:v}))} placeholder="Type or select" />
-            <Select label="Theme" options={lookups.themes} value={form.Theme} onChange={v=>setForm(f=>({...f, Theme:v}))} placeholder="Type or select" />
-            <Input label="Key" placeholder="e.g., G, E, Bb" value={form.Key} onChange={e=>setForm(f=>({...f, Key:e.target.value}))} />
-            <Input label="Typical Key (Male)" value={form.TypicalKeyMale} onChange={e=>setForm(f=>({...f, TypicalKeyMale:e.target.value}))} />
-            <Input label="Typical Key (Female)" value={form.TypicalKeyFemale} onChange={e=>setForm(f=>({...f, TypicalKeyFemale:e.target.value}))} />
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Input label="Audio Link (YouTube/Spotify)" value={form.LinkAudio} onChange={e=>setForm(f=>({...f, LinkAudio:e.target.value}))} />
-            <Input label="Lyrics Link" value={form.LinkLyrics} onChange={e=>setForm(f=>({...f, LinkLyrics:e.target.value}))} />
-          </div>
-          <TextArea label="Lyrics (paste or summary)" rows={4} value={form.Lyrics} onChange={e=>setForm(f=>({...f, Lyrics:e.target.value}))} />
-          <TextArea label="Context Notes (tempo, arrangement differences, etc.)" rows={3} value={form.ContextNotes} onChange={e=>setForm(f=>({...f, ContextNotes:e.target.value}))} />
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <Input label="Created By" placeholder="Your name/email" value={form.CreatedBy} onChange={e=>setForm(f=>({...f, CreatedBy:e.target.value}))} />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button className="rounded-xl border px-3 py-2" onClick={()=>setForm({Song:"",VersionLabel:"",VersionArtist:"",Arrangement:"",Language:"",Theme:"",Key:"",TypicalKeyMale:"",TypicalKeyFemale:"",LinkAudio:"",LinkLyrics:"",Lyrics:"",ContextNotes:"",CreatedBy:""})}>Clear</button>
-            <button disabled={formDisabled} className={`rounded-xl px-3 py-2 ${formDisabled? 'bg-gray-300 text-gray-600':'bg-black text-white'}`} onClick={addToReview}>Send to Review</button>
-          </div>
-        </section>
-      )}
-
-      {tab==='review' && (
-        <section className="mt-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-sm text-gray-600">{reviewLoading? 'Loading…' : `${review.length} item(s)`}</div>
-            <div className="flex gap-2">
-              <button className="rounded-xl border px-3 py-2" onClick={loadReview}>Refresh</button>
-              <button className="rounded-xl bg-black px-3 py-2 text-white" onClick={bulkApprove}>Bulk Approve</button>
-            </div>
-          </div>
-          <div className="overflow-auto rounded-2xl border">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-left">
-                <tr>
-                  <th className="p-2"><input type="checkbox" onChange={e=>{
-                    const v = e.target.checked; const m={}; review.forEach(r=> m[r._RowIndex]=v); setBulkSel(m);
-                  }}/></th>
-                  <th className="p-2">Song</th>
-                  <th className="p-2">Version</th>
-                  <th className="p-2">Artist</th>
-                  <th className="p-2">Lang</th>
-                  <th className="p-2">Theme</th>
-                  <th className="p-2">Key</th>
-                  <th className="p-2">Audio</th>
-                  <th className="p-2">Lyrics</th>
-                  <th className="p-2">Created</th>
-                  <th className="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {review.map(r=> (
-                  <tr key={r._RowIndex} className="border-t">
-                    <td className="p-2 align-top"><input type="checkbox" checked={!!bulkSel[r._RowIndex]} onChange={e=> setBulkSel(s=>({...s, [r._RowIndex]: e.target.checked})) }/></td>
-                    <td className="p-2 align-top">
-                      <div className="font-medium">{r.Song}</div>
-                      <div className="text-xs text-gray-500">{r.ContextNotes}</div>
-                    </td>
-                    <td className="p-2 align-top">{r.VersionLabel}</td>
-                    <td className="p-2 align-top">{r.VersionArtist}</td>
-                    <td className="p-2 align-top">{r.Language}</td>
-                    <td className="p-2 align-top">{r.Theme}</td>
-                    <td className="p-2 align-top">{r.Key}</td>
-                    <td className="p-2 align-top">{r.LinkAudio? <a className="text-blue-600 underline" href={r.LinkAudio} target="_blank" rel="noreferrer">Open</a>: ''}</td>
-                    <td className="p-2 align-top">{r.LinkLyrics? <a className="text-blue-600 underline" href={r.LinkLyrics} target="_blank" rel="noreferrer">Open</a>: ''}</td>
-                    <td className="p-2 align-top">{r.CreatedAt}</td>
-                    <td className="p-2 align-top">
-                      <div className="flex gap-2">
-                        <button className="rounded-xl border px-2 py-1" onClick={()=>approveRow(r._RowIndex)}>Approve</button>
-                        <button className="rounded-xl border px-2 py-1" onClick={()=>rejectRow(r._RowIndex)}>Reject</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {!review.length && !reviewLoading && (
-                  <tr><td colSpan={11} className="p-6 text-center text-gray-500">No pending rows.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* Song details modal */}
-      {selected && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={()=>setSelected(null)}>
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white p-4" onClick={e=>e.stopPropagation()}>
-            <div className="mb-2 flex items-start justify-between">
-              <div>
-                <div className="text-xl font-semibold">{selected.Song}</div>
-                <div className="mt-1 flex flex-wrap gap-1 text-xs text-gray-600">
-                  {selected.VersionLabel && <Badge>{selected.VersionLabel}</Badge>}
-                  {selected.VersionArtist && <Badge>{selected.VersionArtist}</Badge>}
-                  {selected.Language && <Badge>{selected.Language}</Badge>}
-                  {selected.Theme && <Badge>{selected.Theme}</Badge>}
-                  {selected.Key && <Badge>Key {selected.Key}</Badge>}
-                </div>
-              </div>
-              <button className="rounded-full border px-3 py-1" onClick={()=>setSelected(null)}>Close</button>
-            </div>
-            <div className="grid gap-3">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <Input label="Audio Link" readOnly value={selected.LinkAudio||''} />
-                <Input label="Lyrics Link" readOnly value={selected.LinkLyrics||''} />
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <Input label="Typical Key (Male)" readOnly value={selected.TypicalKeyMale||''} />
-                <Input label="Typical Key (Female)" readOnly value={selected.TypicalKeyFemale||''} />
-                <Input label="Slug" readOnly value={selected.Slug||''} />
-              </div>
-              {selected.Lyrics && <TextArea label="Lyrics" readOnly rows={8} value={selected.Lyrics}/>}            
-              {selected.ContextNotes && <TextArea label="Context Notes" readOnly rows={4} value={selected.ContextNotes}/>}            
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 text-xs text-gray-500">
-                <Input label="Created At" readOnly value={selected.CreatedAt||''} />
-                <Input label="Created By" readOnly value={selected.CreatedBy||''} />
-                <Input label="Updated At" readOnly value={selected.UpdatedAt||''} />
-                <Input label="Updated By" readOnly value={selected.UpdatedBy||''} />
-              </div>
-            </div>
+    <!-- ADD -->
+    <section id="view-add" class="view hidden" style="margin-top:12px">
+      <div class="card">
+        <div class="head">Add Song → Review Queue</div>
+        <div class="grid g-3" style="padding:12px">
+          <input id="fSong" class="input" placeholder="Song *" />
+          <input id="fVersionLabel" class="input" placeholder="Version Label (e.g., Hillsong Live)" />
+          <input id="fVersionArtist" class="input" placeholder="Version Artist" />
+          <input id="fArrangement" class="input" placeholder="Arrangement (Studio / Live / Hymn)" />
+          <select id="fLanguage"></select>
+          <select id="fTheme"></select>
+          <input id="fKey" class="input" placeholder="Key (e.g., G)" />
+          <input id="fKeyM" class="input" placeholder="Typical Key (Male)" />
+          <input id="fKeyF" class="input" placeholder="Typical Key (Female)" />
+          <input id="fAudio" class="input" placeholder="Audio link (YouTube/Spotify)" />
+          <input id="fLyricsLink" class="input" placeholder="Lyrics link" />
+          <textarea id="fLyrics" class="input" placeholder="Lyrics (paste or summary)" rows="3"></textarea>
+          <textarea id="fNotes" class="input" placeholder="Context notes (tempo, arrangement differences, scripture, etc.)" rows="3"></textarea>
+          <input id="fCreatedBy" class="input" placeholder="Your name/email" />
+          <div class="row-end" style="grid-column:1/-1">
+            <button class="btn" id="btnClear">Clear</button>
+            <button class="btn primary" id="btnAdd">Send to Review</button>
           </div>
         </div>
-      )}
+      </div>
+    </section>
 
-      <footer className="mt-8 text-center text-xs text-gray-500">v2 frontend • paste your API URL above • data persists in your Google Sheet</footer>
+    <!-- REVIEW -->
+    <section id="view-review" class="view hidden" style="margin-top:12px">
+      <div class="card">
+        <div class="head">
+          <span id="revCount" class="muted">0 item(s)</span>
+          <div class="row">
+            <button class="btn" id="btnRefreshReview">Refresh</button>
+            <button class="btn primary" id="btnBulkApprove">Bulk Approve</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="tblReview">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="chkAll" /></th>
+                <th>Song</th>
+                <th>Version</th>
+                <th>Artist</th>
+                <th>Lang</th>
+                <th>Theme</th>
+                <th>Key</th>
+                <th>Audio</th>
+                <th>Lyrics</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Details Modal -->
+  <div id="modal" class="modal">
+    <div class="panel card">
+      <div class="head"><span id="mTitle">Song</span><button class="btn" id="mClose">Close</button></div>
+      <div style="padding:12px" class="grid g-3">
+        <div>
+          <div class="muted">Version</div>
+          <div id="mVersion"></div>
+        </div>
+        <div>
+          <div class="muted">Artist</div>
+          <div id="mArtist"></div>
+        </div>
+        <div>
+          <div class="muted">Slug</div>
+          <div id="mSlug"></div>
+        </div>
+        <div>
+          <div class="muted">Language</div>
+          <div id="mLang"></div>
+        </div>
+        <div>
+          <div class="muted">Theme</div>
+          <div id="mTheme"></div>
+        </div>
+        <div>
+          <div class="muted">Key / Male / Female</div>
+          <div id="mKeys"></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Audio</div>
+          <div><a id="mAudio" href="#" target="_blank"></a></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Lyrics Link</div>
+          <div><a id="mLyricsLink" href="#" target="_blank"></a></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Lyrics</div>
+          <pre id="mLyrics" style="white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:10px"></pre>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Context Notes</div>
+          <pre id="mNotes" style="white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:10px"></pre>
+        </div>
+      </div>
     </div>
-  );
-}
+  </div>
+
+<script>
+(function(){
+  const COLS = [
+    'SongID','Song','VersionLabel','VersionArtist','Arrangement','Language','Theme','Key',
+    'TypicalKeyMale','TypicalKeyFemale','Lyrics','LinkAudio','LinkLyrics','ContextNotes',
+    'CreatedAt','CreatedBy','UpdatedAt','UpdatedBy','Slug','Status'
+  ];
+  const els = {
+    tabs: document.querySelectorAll('.tab'),
+    views: {
+      catalog: document.getElementById('view-catalog'),
+      add: document.getElementById('view-add'),
+      review: document.getElementById('view-review')
+    },
+    apiBase: document.getElementById('apiBase'),
+    adminUser: document.getElementById('adminUser'),
+    adminPin: document.getElementById('adminPin'),
+    btnTest: document.getElementById('btnTest'),
+    btnSaveSettings: document.getElementById('btnSaveSettings'),
+    healthChip: document.getElementById('healthChip'),
+
+    // catalog
+    qSong: document.getElementById('qSong'),
+    qTheme: document.getElementById('qTheme'),
+    qLanguage: document.getElementById('qLanguage'),
+    qKey: document.getElementById('qKey'),
+    qVersionLabel: document.getElementById('qVersionLabel'),
+    qVersionArtist: document.getElementById('qVersionArtist'),
+    qArrangement: document.getElementById('qArrangement'),
+    btnSearch: document.getElementById('btnSearch'),
+    tblCatalog: document.querySelector('#tblCatalog tbody'),
+    resCount: document.getElementById('resCount'),
+
+    // add
+    fSong: document.getElementById('fSong'),
+    fVersionLabel: document.getElementById('fVersionLabel'),
+    fVersionArtist: document.getElementById('fVersionArtist'),
+    fArrangement: document.getElementById('fArrangement'),
+    fLanguage: document.getElementById('fLanguage'),
+    fTheme: document.getElementById('fTheme'),
+    fKey: document.getElementById('fKey'),
+    fKeyM: document.getElementById('fKeyM'),
+    fKeyF: document.getElementById('fKeyF'),
+    fAudio: document.getElementById('fAudio'),
+    fLyricsLink: document.getElementById('fLyricsLink'),
+    fLyrics: document.getElementById('fLyrics'),
+    fNotes: document.getElementById('fNotes'),
+    fCreatedBy: document.getElementById('fCreatedBy'),
+    btnAdd: document.getElementById('btnAdd'),
+    btnClear: document.getElementById('btnClear'),
+
+    // review
+    tblReview: document.querySelector('#tblReview tbody'),
+    revCount: document.getElementById('revCount'),
+    btnRefreshReview: document.getElementById('btnRefreshReview'),
+    btnBulkApprove: document.getElementById('btnBulkApprove'),
+    chkAll: document.getElementById('chkAll'),
+
+    // modal
+    modal: document.getElementById('modal'),
+    mClose: document.getElementById('mClose'),
+    mTitle: document.getElementById('mTitle'),
+    mVersion: document.getElementById('mVersion'),
+    mArtist: document.getElementById('mArtist'),
+    mSlug: document.getElementById('mSlug'),
+    mLang: document.getElementById('mLang'),
+    mTheme: document.getElementById('mTheme'),
+    mKeys: document.getElementById('mKeys'),
+    mAudio: document.getElementById('mAudio'),
+    mLyricsLink: document.getElementById('mLyricsLink'),
+    mLyrics: document.getElementById('mLyrics'),
+    mNotes: document.getElementById('mNotes'),
+  };
+
+  // local storage
+  const LS = {
+    get(k, d=''){ try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } },
+    set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)) } catch{} }
+  }
+  els.apiBase.value = LS.get('wc_api_base', '');
+  els.adminUser.value = LS.get('wc_admin_user', '');
+  els.adminPin.value = LS.get('wc_admin_pin', '');
+
+  function setOnline(ok){ els.healthChip.textContent = ok ? 'Online' : 'Offline'; els.healthChip.style.background = ok? '#e8f0fe':'#f3f4f6'; els.healthChip.style.borderColor = ok? '#90c2ff':'#e6e6e6'; els.healthChip.style.color = ok? '#0b57d0':'#333'; }
+
+  async function apiGet(params){
+    const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL');
+    const qs = new URLSearchParams(params);
+    const r = await fetch(`${base}?${qs.toString()}`);
+    if(!r.ok) throw new Error(`GET ${params.action} ${r.status}`);
+    return r.json();
+  }
+  async function apiPost(body){
+    const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL');
+    const r = await fetch(base, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    if(!r.ok) throw new Error(`POST ${body.action} ${r.status}`);
+    return r.json();
+  }
+
+  // tabs
+  els.tabs.forEach(btn=> btn.addEventListener('click', ()=>{
+    els.tabs.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const t = btn.dataset.tab;
+    Object.keys(els.views).forEach(k=> els.views[k].classList.toggle('hidden', k!==t));
+    if (t==='review') loadReview();
+  }));
+
+  // settings
+  els.btnSaveSettings.addEventListener('click', ()=>{
+    LS.set('wc_api_base', els.apiBase.value.trim());
+    LS.set('wc_admin_user', els.adminUser.value.trim());
+    LS.set('wc_admin_pin', els.adminPin.value.trim());
+    alert('Saved.');
+  });
+  els.btnTest.addEventListener('click', async()=>{
+    try{ const r = await apiGet({action:'health'}); setOnline(true); alert('Backend OK: '+ (r.time||'')); await loadLookups(); }
+    catch(e){ setOnline(false); alert(e.message||e); }
+  });
+
+  // lookups
+  async function loadLookups(){
+    try{
+      const r = await apiGet({action:'listLookups'});
+      fillSelect(els.qTheme, ['','Any'].concat(r.themes||[]));
+      fillSelect(els.qLanguage, ['','Any'].concat(r.languages||[]));
+      fillSelect(els.fTheme, [''].concat(r.themes||[]));
+      fillSelect(els.fLanguage, [''].concat(r.languages||[]));
+    }catch(e){ /* ignore */ }
+  }
+  function fillSelect(sel, arr){ sel.innerHTML=''; arr.forEach((v,i)=>{ const opt=document.createElement('option'); opt.value = i===0? '': v; opt.textContent = v||'--'; sel.appendChild(opt); }); }
+
+  // catalog search
+  document.getElementById('btnSearch').addEventListener('click', async()=>{
+    try{
+      const r = await apiGet({
+        action:'searchSongs', song: els.qSong.value, theme: els.qTheme.value, language: els.qLanguage.value, key: els.qKey.value,
+        versionlabel: els.qVersionLabel.value, versionartist: els.qVersionArtist.value, arrangement: els.qArrangement.value
+      });
+      renderCatalog(r.rows||[]);
+    }catch(e){ alert(e.message||e); }
+  });
+  function renderCatalog(rows){
+    els.resCount.textContent = `${rows.length} result(s)`;
+    const tb = els.tblCatalog; tb.innerHTML='';
+    rows.forEach(row=>{
+      const tr = document.createElement('tr'); tr.className='list-row';
+      tr.innerHTML = `
+        <td><div style="font-weight:600">${esc(row.Song)}</div></td>
+        <td>${esc(row.VersionLabel||'')}</td>
+        <td>${esc(row.VersionArtist||'')}</td>
+        <td>${esc(row.Language||'')}</td>
+        <td>${esc(row.Theme||'')}</td>
+        <td>${esc(row.Key||'')}</td>
+        <td class="muted">${esc(row.ContextNotes||'')}</td>
+      `;
+      tr.addEventListener('click', ()=> openModal(row));
+      tb.appendChild(tr);
+    });
+    if (!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="7" class="muted" style="text-align:center;padding:18px">No results</td>`; tb.appendChild(tr); }
+  }
+
+  // add song
+  els.btnClear.addEventListener('click', ()=> clearForm());
+  function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes','fCreatedBy'].forEach(id=> els[id].value=''); }
+  els.btnAdd.addEventListener('click', async()=>{
+    if(!els.fSong.value.trim()) return alert('Song is required');
+    try{
+      const body = { action:'addToReviewQueue',
+        Song: els.fSong.value, VersionLabel: els.fVersionLabel.value, VersionArtist: els.fVersionArtist.value, Arrangement: els.fArrangement.value,
+        Language: els.fLanguage.value, Theme: els.fTheme.value, Key: els.fKey.value, TypicalKeyMale: els.fKeyM.value, TypicalKeyFemale: els.fKeyF.value,
+        LinkAudio: els.fAudio.value, LinkLyrics: els.fLyricsLink.value, Lyrics: els.fLyrics.value, ContextNotes: els.fNotes.value, CreatedBy: els.fCreatedBy.value
+      };
+      const r = await apiPost(body);
+      alert('Sent to review (row '+ r.rowIndex +')');
+      clearForm();
+      selectTab('review');
+      await loadReview();
+    }catch(e){ alert(e.message||e); }
+  });
+
+  // review
+  els.btnRefreshReview.addEventListener('click', loadReview);
+  els.chkAll.addEventListener('change', ()=>{
+    const c = els.chkAll.checked; document.querySelectorAll('.rev-chk').forEach(x=> x.checked=c);
+  });
+  async function loadReview(){
+    try{
+      const r = await apiGet({action:'listReview'});
+      const rows = r.rows||[]; els.revCount.textContent = `${rows.length} item(s)`;
+      const tb = els.tblReview; tb.innerHTML='';
+      rows.forEach(row=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="checkbox" class="rev-chk" data-idx="${row._RowIndex}"/></td>
+          <td><div style="font-weight:600">${esc(row.Song)}</div><div class="muted">${esc(row.ContextNotes||'')}</div></td>
+          <td>${esc(row.VersionLabel||'')}</td>
+          <td>${esc(row.VersionArtist||'')}</td>
+          <td>${esc(row.Language||'')}</td>
+          <td>${esc(row.Theme||'')}</td>
+          <td>${esc(row.Key||'')}</td>
+          <td>${row.LinkAudio? `<a href="${esc(row.LinkAudio)}" target="_blank">Open</a>`:''}</td>
+          <td>${row.LinkLyrics? `<a href="${esc(row.LinkLyrics)}" target="_blank">Open</a>`:''}</td>
+          <td>${esc(row.CreatedAt||'')}</td>
+          <td>
+            <button class="btn" data-act="approve" data-idx="${row._RowIndex}">Approve</button>
+            <button class="btn danger" data-act="reject" data-idx="${row._RowIndex}">Reject</button>
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
+      if (!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="11" class="muted" style="text-align:center;padding:18px">No pending rows</td>`; tb.appendChild(tr); }
+
+      // actions
+      tb.querySelectorAll('button[data-act="approve"]').forEach(btn=> btn.addEventListener('click', async()=>{
+        const idx = parseInt(btn.dataset.idx,10);
+        try{
+          const r = await apiPost({ action:'approveReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value });
+          alert('Approved → '+ r.slug);
+          loadReview();
+        }catch(e){ alert(e.message||e); }
+      }));
+      tb.querySelectorAll('button[data-act="reject"]').forEach(btn=> btn.addEventListener('click', async()=>{
+        const idx = parseInt(btn.dataset.idx,10);
+        try{
+          await apiPost({ action:'rejectReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value });
+          loadReview();
+        }catch(e){ alert(e.message||e); }
+      }));
+
+      // bulk approve
+      document.getElementById('btnBulkApprove').onclick = async()=>{
+        const rows = Array.from(document.querySelectorAll('.rev-chk:checked')).map(x=> parseInt(x.dataset.idx,10));
+        if (!rows.length) return alert('Select at least one');
+        try{
+          const r = await apiPost({ action:'bulkApprove', rowIndices: rows, adminUser: els.adminUser.value, adminPin: els.adminPin.value });
+          alert('Bulk approved: '+ r.results.filter(x=>x.ok).length +'/'+ r.results.length);
+          loadReview();
+        }catch(e){ alert(e.message||e); }
+      };
+
+    }catch(e){ alert(e.message||e); }
+  }
+
+  // modal
+  function openModal(row){
+    els.mTitle.textContent = row.Song || '';
+    els.mVersion.textContent = row.VersionLabel || '';
+    els.mArtist.textContent = row.VersionArtist || '';
+    els.mSlug.textContent = row.Slug || '';
+    els.mLang.textContent = row.Language || '';
+    els.mTheme.textContent = row.Theme || '';
+    els.mKeys.textContent = [row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / ');
+    els.mAudio.textContent = row.LinkAudio || ''; els.mAudio.href = row.LinkAudio || '#';
+    els.mLyricsLink.textContent = row.LinkLyrics || ''; els.mLyricsLink.href = row.LinkLyrics || '#';
+    els.mLyrics.textContent = row.Lyrics || '';
+    els.mNotes.textContent = row.ContextNotes || '';
+    els.modal.classList.add('open');
+  }
+  els.mClose.addEventListener('click', ()=> els.modal.classList.remove('open'));
+  els.modal.addEventListener('click', (e)=>{ if(e.target===els.modal) els.modal.classList.remove('open'); });
+
+  // helpers
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function selectTab(name){ document.querySelector(`.tab[data-tab="${name}"]`).click(); }
+
+  // initial
+  if (els.apiBase.value) { (async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await loadLookups(); } catch{ setOnline(false);} })(); }
+})();
+</script>
+</body>
+</html>
