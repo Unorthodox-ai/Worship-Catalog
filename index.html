@@ -5,17 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wells Salvation - Worship Catalog</title>
   <style>
-    :root{--bg:#ffffff;--fg:#111;--muted:#666;--line:#e6e6e6;--accent:#0b57d0;--chip:#f3f4f6;--danger:#b00020;}
-    *{box-sizing:border-box} html,body{height:100%} body{margin:0;font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;color:var(--fg);background:var(--bg)}
+    :root{--bg:#ffffff;--fg:#111;--muted:#666;--line:#e6e6e6;--accent:#0b57d0;--chip:#f3f4f6;--danger:#b00020}
+    *{box-sizing:border-box} html,body{height:100%} body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--fg);background:var(--bg)}
     .wrap{max-width:1100px;margin:0 auto;padding:16px}
     .top{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0}
     .brand{display:flex;gap:10px;align-items:center}
     .brand h1{font-size:18px;margin:0;font-weight:650}
     .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:#333}
     .row{display:flex;gap:10px;align-items:center}
-    .input, select, textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;outline:none}
-    .input:focus, select:focus, textarea:focus{border-color:var(--accent)}
+    .input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;outline:none}
+    .input:focus,select:focus,textarea:focus{border-color:var(--accent)}
     .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
     .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
     .btn.danger{background:#fff;border-color:var(--danger);color:var(--danger)}
     .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-top:10px}
@@ -37,7 +38,7 @@
     .hidden{display:none}
     .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px}
     .modal.open{display:flex}
-    .modal .panel{max-width:750px;width:100%;max-height:90vh;overflow:auto}
+    .modal .panel{max-width:800px;width:100%;max-height:90vh;overflow:auto}
     .row-end{display:flex;gap:10px;justify-content:flex-end}
     .settings{border:1px dashed var(--line);border-radius:10px;padding:8px}
   </style>
@@ -172,35 +173,81 @@
     </section>
   </div>
 
-  <!-- Details Modal -->
-  <div class="head">
-    <span id="mTitle">Song</span>
-    <div class="row">
-      <button class="btn" id="mEdit">Edit</button>
-      <button class="btn primary" id="mSave" style="display:none">Save</button>
-      <button class="btn" id="mCancel" style="display:none">Cancel</button>
-      <button class="btn" id="mClose">Close</button>
+  <!-- DETAILS MODAL -->
+  <div id="modal" class="modal">
+    <div class="panel card">
+      <div class="head">
+        <span id="mTitle">Song</span>
+        <div class="row">
+          <button class="btn" id="mEdit">Edit</button>
+          <button class="btn primary" id="mSave" style="display:none">Save</button>
+          <button class="btn" id="mCancel" style="display:none">Cancel</button>
+          <button class="btn danger" id="mDelete" style="display:none">Delete</button>
+          <button class="btn" id="mClose">Close</button>
+        </div>
+      </div>
+      <div style="padding:12px" class="grid g-3">
+        <div>
+          <div class="muted">Version</div>
+          <div id="mVersion"></div>
+        </div>
+        <div>
+          <div class="muted">Artist</div>
+          <div id="mArtist"></div>
+        </div>
+        <div>
+          <div class="muted">Slug</div>
+          <div id="mSlug"></div>
+        </div>
+        <div>
+          <div class="muted">Language</div>
+          <div id="mLang"></div>
+        </div>
+        <div>
+          <div class="muted">Theme</div>
+          <div id="mTheme"></div>
+        </div>
+        <div>
+          <div class="muted">Key / Male / Female</div>
+          <div id="mKeys"></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Audio</div>
+          <div><a id="mAudio" href="#" target="_blank"></a></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Lyrics Link</div>
+          <div><a id="mLyricsLink" href="#" target="_blank"></a></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Lyrics</div>
+          <pre id="mLyrics" style="white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:10px"></pre>
+        </div>
+        <div style="grid-column:1/-1">
+          <div class="muted">Context Notes</div>
+          <pre id="mNotes" style="white-space:pre-wrap;background:#fafafa;border:1px solid var(--line);border-radius:8px;padding:10px"></pre>
+        </div>
+
+        <!-- Editable fields (hidden by default) -->
+        <div id="editFields" class="grid g-3" style="grid-column:1/-1; padding-top:8px; display:none">
+          <input id="eSong" class="input" placeholder="Song" />
+          <input id="eVersionLabel" class="input" placeholder="Version Label" />
+          <input id="eVersionArtist" class="input" placeholder="Version Artist" />
+          <input id="eArrangement" class="input" placeholder="Arrangement" />
+          <input id="eLanguage" class="input" placeholder="Language" />
+          <input id="eTheme" class="input" placeholder="Theme" />
+          <input id="eKey" class="input" placeholder="Key" />
+          <input id="eKeyM" class="input" placeholder="Typical Key (Male)" />
+          <input id="eKeyF" class="input" placeholder="Typical Key (Female)" />
+          <input id="eAudio" class="input" placeholder="Audio Link" />
+          <input id="eLyricsLink" class="input" placeholder="Lyrics Link" />
+          <textarea id="eLyrics" class="input" placeholder="Lyrics" rows="4"></textarea>
+          <textarea id="eNotes" class="input" placeholder="Context Notes" rows="3"></textarea>
+        </div>
+      </div>
     </div>
   </div>
-  
-  <!-- Editable fields (hidden by default) -->
-  <div id="editFields" class="grid g-3" style="padding-top:8px; display:none">
-    <input id="eSong" class="input" placeholder="Song" />
-    <input id="eVersionLabel" class="input" placeholder="Version Label" />
-    <input id="eVersionArtist" class="input" placeholder="Version Artist" />
-    <input id="eArrangement" class="input" placeholder="Arrangement" />
-    <input id="eLanguage" class="input" placeholder="Language" />
-    <input id="eTheme" class="input" placeholder="Theme" />
-    <input id="eKey" class="input" placeholder="Key" />
-    <input id="eKeyM" class="input" placeholder="Typical Key (Male)" />
-    <input id="eKeyF" class="input" placeholder="Typical Key (Female)" />
-    <input id="eAudio" class="input" placeholder="Audio Link" />
-    <input id="eLyricsLink" class="input" placeholder="Lyrics Link" />
-    <textarea id="eLyrics" class="input" placeholder="Lyrics" rows="4"></textarea>
-    <textarea id="eNotes" class="input" placeholder="Context Notes" rows="3"></textarea>
-  </div>
 
-  
 <script>
 (function(){
   const COLS = [
@@ -208,234 +255,78 @@
     'TypicalKeyMale','TypicalKeyFemale','Lyrics','LinkAudio','LinkLyrics','ContextNotes',
     'CreatedAt','CreatedBy','UpdatedAt','UpdatedBy','Slug','Status'
   ];
+
   const els = {
     tabs: document.querySelectorAll('.tab'),
-    views: {
-      catalog: document.getElementById('view-catalog'),
-      add: document.getElementById('view-add'),
-      review: document.getElementById('view-review')
-    },
-    apiBase: document.getElementById('apiBase'),
-    adminUser: document.getElementById('adminUser'),
-    adminPin: document.getElementById('adminPin'),
-    btnTest: document.getElementById('btnTest'),
-    btnSaveSettings: document.getElementById('btnSaveSettings'),
-    healthChip: document.getElementById('healthChip'),
-
+    views: { catalog: byId('view-catalog'), add: byId('view-add'), review: byId('view-review') },
+    apiBase: byId('apiBase'), adminUser: byId('adminUser'), adminPin: byId('adminPin'),
+    btnTest: byId('btnTest'), btnSaveSettings: byId('btnSaveSettings'), healthChip: byId('healthChip'),
     // catalog
-    qSong: document.getElementById('qSong'),
-    qTheme: document.getElementById('qTheme'),
-    qLanguage: document.getElementById('qLanguage'),
-    qKey: document.getElementById('qKey'),
-    qVersionLabel: document.getElementById('qVersionLabel'),
-    qVersionArtist: document.getElementById('qVersionArtist'),
-    qArrangement: document.getElementById('qArrangement'),
-    btnSearch: document.getElementById('btnSearch'),
-    tblCatalog: document.querySelector('#tblCatalog tbody'),
-    resCount: document.getElementById('resCount'),
-
+    qSong: byId('qSong'), qTheme: byId('qTheme'), qLanguage: byId('qLanguage'), qKey: byId('qKey'),
+    qVersionLabel: byId('qVersionLabel'), qVersionArtist: byId('qVersionArtist'), qArrangement: byId('qArrangement'),
+    btnSearch: byId('btnSearch'), tblCatalog: qs('#tblCatalog tbody'), resCount: byId('resCount'),
     // add
-    fSong: document.getElementById('fSong'),
-    fVersionLabel: document.getElementById('fVersionLabel'),
-    fVersionArtist: document.getElementById('fVersionArtist'),
-    fArrangement: document.getElementById('fArrangement'),
-    fLanguage: document.getElementById('fLanguage'),
-    fTheme: document.getElementById('fTheme'),
-    fKey: document.getElementById('fKey'),
-    fKeyM: document.getElementById('fKeyM'),
-    fKeyF: document.getElementById('fKeyF'),
-    fAudio: document.getElementById('fAudio'),
-    fLyricsLink: document.getElementById('fLyricsLink'),
-    fLyrics: document.getElementById('fLyrics'),
-    fNotes: document.getElementById('fNotes'),
-    fCreatedBy: document.getElementById('fCreatedBy'),
-    btnAdd: document.getElementById('btnAdd'),
-    btnClear: document.getElementById('btnClear'),
-
+    fSong: byId('fSong'), fVersionLabel: byId('fVersionLabel'), fVersionArtist: byId('fVersionArtist'), fArrangement: byId('fArrangement'),
+    fLanguage: byId('fLanguage'), fTheme: byId('fTheme'), fKey: byId('fKey'), fKeyM: byId('fKeyM'), fKeyF: byId('fKeyF'),
+    fAudio: byId('fAudio'), fLyricsLink: byId('fLyricsLink'), fLyrics: byId('fLyrics'), fNotes: byId('fNotes'), fCreatedBy: byId('fCreatedBy'),
+    btnAdd: byId('btnAdd'), btnClear: byId('btnClear'),
     // review
-    tblReview: document.querySelector('#tblReview tbody'),
-    revCount: document.getElementById('revCount'),
-    btnRefreshReview: document.getElementById('btnRefreshReview'),
-    btnBulkApprove: document.getElementById('btnBulkApprove'),
-    chkAll: document.getElementById('chkAll'),
-
-    // modal
-    modal: document.getElementById('modal'),
-    mClose: document.getElementById('mClose'),
-    mTitle: document.getElementById('mTitle'),
-    mVersion: document.getElementById('mVersion'),
-    mArtist: document.getElementById('mArtist'),
-    mSlug: document.getElementById('mSlug'),
-    mLang: document.getElementById('mLang'),
-    mTheme: document.getElementById('mTheme'),
-    mKeys: document.getElementById('mKeys'),
-    mAudio: document.getElementById('mAudio'),
-    mLyricsLink: document.getElementById('mLyricsLink'),
-    mLyrics: document.getElementById('mLyrics'),
-    mNotes: document.getElementById('mNotes'),
-
-    // updateSong
-    mEdit: document.getElementById('mEdit'),
-    mSave: document.getElementById('mSave'),
-    mCancel: document.getElementById('mCancel'),
-    editFields: document.getElementById('editFields'),
-
-    eSong: document.getElementById('eSong'),
-    eVersionLabel: document.getElementById('eVersionLabel'),
-    eVersionArtist: document.getElementById('eVersionArtist'),
-    eArrangement: document.getElementById('eArrangement'),
-    eLanguage: document.getElementById('eLanguage'),
-    eTheme: document.getElementById('eTheme'),
-    eKey: document.getElementById('eKey'),
-    eKeyM: document.getElementById('eKeyM'),
-    eKeyF: document.getElementById('eKeyF'),
-    eAudio: document.getElementById('eAudio'),
-    eLyricsLink: document.getElementById('eLyricsLink'),
-    eLyrics: document.getElementById('eLyrics'),
-    eNotes: document.getElementById('eNotes'),
+    tblReview: qs('#tblReview tbody'), revCount: byId('revCount'), btnRefreshReview: byId('btnRefreshReview'), btnBulkApprove: byId('btnBulkApprove'), chkAll: byId('chkAll'),
+    // modal (view)
+    modal: byId('modal'), mClose: byId('mClose'), mTitle: byId('mTitle'), mVersion: byId('mVersion'), mArtist: byId('mArtist'), mSlug: byId('mSlug'),
+    mLang: byId('mLang'), mTheme: byId('mTheme'), mKeys: byId('mKeys'), mAudio: byId('mAudio'), mLyricsLink: byId('mLyricsLink'), mLyrics: byId('mLyrics'), mNotes: byId('mNotes'),
+    // modal (edit)
+    mEdit: byId('mEdit'), mSave: byId('mSave'), mCancel: byId('mCancel'), mDelete: byId('mDelete'), editFields: byId('editFields'),
+    eSong: byId('eSong'), eVersionLabel: byId('eVersionLabel'), eVersionArtist: byId('eVersionArtist'), eArrangement: byId('eArrangement'), eLanguage: byId('eLanguage'),
+    eTheme: byId('eTheme'), eKey: byId('eKey'), eKeyM: byId('eKeyM'), eKeyF: byId('eKeyF'), eAudio: byId('eAudio'), eLyricsLink: byId('eLyricsLink'), eLyrics: byId('eLyrics'), eNotes: byId('eNotes')
   };
 
-  // local storage
-  const LS = {
-    get(k, d=''){ try { return JSON.parse(localStorage.getItem(k)) ?? d } catch { return d } },
-    set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)) } catch{} }
-  }
-  els.apiBase.value = LS.get('wc_api_base', '');
-  els.adminUser.value = LS.get('wc_admin_user', '');
-  els.adminPin.value = LS.get('wc_admin_pin', '');
+  let currentRow = null; let editMode = false;
+
+  // Local storage
+  const LS = { get(k,d=''){ try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d} }, set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} } };
+  els.apiBase.value = LS.get('wc_api_base',''); els.adminUser.value = LS.get('wc_admin_user',''); els.adminPin.value = LS.get('wc_admin_pin','');
 
   function setOnline(ok){ els.healthChip.textContent = ok ? 'Online' : 'Offline'; els.healthChip.style.background = ok? '#e8f0fe':'#f3f4f6'; els.healthChip.style.borderColor = ok? '#90c2ff':'#e6e6e6'; els.healthChip.style.color = ok? '#0b57d0':'#333'; }
+  function byId(id){ return document.getElementById(id) } function qs(sel){ return document.querySelector(sel) }
 
-  async function apiGet(params){
-    const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL');
-    const qs = new URLSearchParams(params);
-    const r = await fetch(`${base}?${qs.toString()}`);
-    if(!r.ok) throw new Error(`GET ${params.action} ${r.status}`);
-    return r.json();
-  }
-  async function apiPost(body) {
-    const base = document.getElementById('apiBase').value.trim();
-    if (!/^https?:\/\//.test(base)) throw new Error('Set API URL');
+  async function apiGet(params){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL'); const qs = new URLSearchParams(params); const r = await fetch(`${base}?${qs.toString()}`); if(!r.ok) throw new Error(`GET ${params.action} ${r.status}`); return r.json(); }
+  async function apiPost(body){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL'); try{ const r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},redirect:'follow',body:JSON.stringify(body)}); if(!r.ok) throw new Error(`POST ${body.action} ${r.status}`); return await r.json(); }catch(e){ const params=new URLSearchParams(Object.entries(body).map(([k,v])=>[k, typeof v==='object'? JSON.stringify(v):(v??'')])); const r2=await fetch(base,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},redirect:'follow',body:params.toString()}); if(!r2.ok) throw new Error(`POST(Fallback) ${body.action} ${r2.status}`); return await r2.json(); } }
 
-    // First try JSON (should work when deployment access is correct)
-    try {
-      const r = await fetch(base, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        redirect: 'follow',
-        body: JSON.stringify(body)
-      });
-      if (!r.ok) throw new Error(`POST ${body.action} ${r.status}`);
-      return await r.json();
-    } catch (e) {
-      // Fallback: send as x-www-form-urlencoded (no JSON headers → fewer preflight issues)
-      const params = new URLSearchParams(Object.entries(body).map(([k,v])=>[k, typeof v==='object'? JSON.stringify(v): (v ?? '')]));
-      const r2 = await fetch(base, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-        redirect: 'follow',
-        body: params.toString()
-      });
-      if (!r2.ok) throw new Error(`POST(Fallback) ${body.action} ${r2.status}`);
-      return await r2.json();
-    }
-  }
+  // Tabs
+  els.tabs.forEach(btn=> btn.addEventListener('click', ()=>{ els.tabs.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); const t=btn.dataset.tab; Object.keys(els.views).forEach(k=> els.views[k].classList.toggle('hidden', k!==t)); if(t==='review') loadReview(); }));
 
-  // tabs
-  els.tabs.forEach(btn=> btn.addEventListener('click', ()=>{
-    els.tabs.forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const t = btn.dataset.tab;
-    Object.keys(els.views).forEach(k=> els.views[k].classList.toggle('hidden', k!==t));
-    if (t==='review') loadReview();
-  }));
+  // Settings
+  els.btnSaveSettings.addEventListener('click', ()=>{ LS.set('wc_api_base', els.apiBase.value.trim()); LS.set('wc_admin_user', els.adminUser.value.trim()); LS.set('wc_admin_pin', els.adminPin.value.trim()); alert('Saved.'); });
+  els.btnTest.addEventListener('click', async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await loadLookups(); alert('Backend OK: '+(r.time||'')); }catch(e){ setOnline(false); alert(e.message||e); } });
 
-  // settings
-  els.btnSaveSettings.addEventListener('click', ()=>{
-    LS.set('wc_api_base', els.apiBase.value.trim());
-    LS.set('wc_admin_user', els.adminUser.value.trim());
-    LS.set('wc_admin_pin', els.adminPin.value.trim());
-    alert('Saved.');
-  });
-  els.btnTest.addEventListener('click', async()=>{
-    try{ const r = await apiGet({action:'health'}); setOnline(true); alert('Backend OK: '+ (r.time||'')); await loadLookups(); }
-    catch(e){ setOnline(false); alert(e.message||e); }
-  });
+  // Lookups
+  async function loadLookups(){ try{ const r=await apiGet({action:'listLookups'}); fillSelect(els.qTheme,['','Any'].concat(r.themes||[])); fillSelect(els.qLanguage,['','Any'].concat(r.languages||[])); fillSelect(els.fTheme,[''].concat(r.themes||[])); fillSelect(els.fLanguage,[''].concat(r.languages||[])); }catch(e){} }
+  function fillSelect(sel,arr){ sel.innerHTML=''; arr.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i===0?'':v; o.textContent=v||'--'; sel.appendChild(o); }); }
 
-  // lookups
-  async function loadLookups(){
-    try{
-      const r = await apiGet({action:'listLookups'});
-      fillSelect(els.qTheme, ['','Any'].concat(r.themes||[]));
-      fillSelect(els.qLanguage, ['','Any'].concat(r.languages||[]));
-      fillSelect(els.fTheme, [''].concat(r.themes||[]));
-      fillSelect(els.fLanguage, [''].concat(r.languages||[]));
-    }catch(e){ /* ignore */ }
-  }
-  function fillSelect(sel, arr){ sel.innerHTML=''; arr.forEach((v,i)=>{ const opt=document.createElement('option'); opt.value = i===0? '': v; opt.textContent = v||'--'; sel.appendChild(opt); }); }
+  // Search
+  function doSearch(){ apiGet({ action:'searchSongs', song: els.qSong.value, theme: els.qTheme.value, language: els.qLanguage.value, key: els.qKey.value, versionlabel: els.qVersionLabel.value, versionartist: els.qVersionArtist.value, arrangement: els.qArrangement.value }).then(r=> renderCatalog(r.rows||[])).catch(e=> alert(e.message||e)); }
+  els.btnSearch.addEventListener('click', doSearch);
+  [els.qSong,els.qKey,els.qVersionLabel,els.qVersionArtist,els.qArrangement].forEach(inp=> inp.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); }));
 
-  // catalog search
-  document.getElementById('btnSearch').addEventListener('click', async()=>{
-    try{
-      const r = await apiGet({
-        action:'searchSongs', song: els.qSong.value, theme: els.qTheme.value, language: els.qLanguage.value, key: els.qKey.value,
-        versionlabel: els.qVersionLabel.value, versionartist: els.qVersionArtist.value, arrangement: els.qArrangement.value
-      });
-      renderCatalog(r.rows||[]);
-    }catch(e){ alert(e.message||e); }
-  });
-  function renderCatalog(rows){
-    els.resCount.textContent = `${rows.length} result(s)`;
-    const tb = els.tblCatalog; tb.innerHTML='';
-    rows.forEach(row=>{
-      const tr = document.createElement('tr'); tr.className='list-row';
-      tr.innerHTML = `
+  function renderCatalog(rows){ els.resCount.textContent=`${rows.length} result(s)`; const tb=els.tblCatalog; tb.innerHTML=''; rows.forEach(row=>{ const tr=document.createElement('tr'); tr.className='list-row'; tr.innerHTML=`
         <td><div style="font-weight:600">${esc(row.Song)}</div></td>
         <td>${esc(row.VersionLabel||'')}</td>
         <td>${esc(row.VersionArtist||'')}</td>
         <td>${esc(row.Language||'')}</td>
         <td>${esc(row.Theme||'')}</td>
         <td>${esc(row.Key||'')}</td>
-        <td class="muted">${esc(row.ContextNotes||'')}</td>
-      `;
-      tr.addEventListener('click', ()=> openModal(row));
-      tb.appendChild(tr);
-    });
-    if (!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="7" class="muted" style="text-align:center;padding:18px">No results</td>`; tb.appendChild(tr); }
-  }
+        <td class="muted">${esc(row.ContextNotes||'')}</td>`; tr.addEventListener('click',()=> openModal(row)); tb.appendChild(tr); }); if(!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="7" class="muted" style="text-align:center;padding:18px">No results</td>`; tb.appendChild(tr); } }
 
-  // add song
-  els.btnClear.addEventListener('click', ()=> clearForm());
+  // Add song
+  byId('btnClear').addEventListener('click', clearForm);
   function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes','fCreatedBy'].forEach(id=> els[id].value=''); }
-  els.btnAdd.addEventListener('click', async()=>{
-    if(!els.fSong.value.trim()) return alert('Song is required');
-    try{
-      const body = { action:'addToReviewQueue',
-        Song: els.fSong.value, VersionLabel: els.fVersionLabel.value, VersionArtist: els.fVersionArtist.value, Arrangement: els.fArrangement.value,
-        Language: els.fLanguage.value, Theme: els.fTheme.value, Key: els.fKey.value, TypicalKeyMale: els.fKeyM.value, TypicalKeyFemale: els.fKeyF.value,
-        LinkAudio: els.fAudio.value, LinkLyrics: els.fLyricsLink.value, Lyrics: els.fLyrics.value, ContextNotes: els.fNotes.value, CreatedBy: els.fCreatedBy.value
-      };
-      const r = await apiPost(body);
-      alert('Sent to review (row '+ r.rowIndex +')');
-      clearForm();
-      selectTab('review');
-      await loadReview();
-    }catch(e){ alert(e.message||e); }
-  });
+  byId('btnAdd').addEventListener('click', async()=>{ if(!els.fSong.value.trim()) return alert('Song is required'); try{ const r=await apiPost({ action:'addToReviewQueue', Song: els.fSong.value, VersionLabel: els.fVersionLabel.value, VersionArtist: els.fVersionArtist.value, Arrangement: els.fArrangement.value, Language: els.fLanguage.value, Theme: els.fTheme.value, Key: els.fKey.value, TypicalKeyMale: els.fKeyM.value, TypicalKeyFemale: els.fKeyF.value, LinkAudio: els.fAudio.value, LinkLyrics: els.fLyricsLink.value, Lyrics: els.fLyrics.value, ContextNotes: els.fNotes.value, CreatedBy: els.fCreatedBy.value }); alert('Sent to review (row '+r.rowIndex+')'); clearForm(); selectTab('review'); await loadReview(); }catch(e){ alert(e.message||e); } });
 
-  // review
+  // Review
   els.btnRefreshReview.addEventListener('click', loadReview);
-  els.chkAll.addEventListener('change', ()=>{
-    const c = els.chkAll.checked; document.querySelectorAll('.rev-chk').forEach(x=> x.checked=c);
-  });
-  async function loadReview(){
-    try{
-      const r = await apiGet({action:'listReview'});
-      const rows = r.rows||[]; els.revCount.textContent = `${rows.length} item(s)`;
-      const tb = els.tblReview; tb.innerHTML='';
-      rows.forEach(row=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
+  els.chkAll.addEventListener('change', ()=>{ const c=els.chkAll.checked; document.querySelectorAll('.rev-chk').forEach(x=> x.checked=c); });
+  async function loadReview(){ try{ const r=await apiGet({action:'listReview'}); const rows=r.rows||[]; els.revCount.textContent=`${rows.length} item(s)`; const tb=els.tblReview; tb.innerHTML=''; rows.forEach(row=>{ const tr=document.createElement('tr'); tr.innerHTML=`
           <td><input type="checkbox" class="rev-chk" data-idx="${row._RowIndex}"/></td>
           <td><div style="font-weight:600">${esc(row.Song)}</div><div class="muted">${esc(row.ContextNotes||'')}</div></td>
           <td>${esc(row.VersionLabel||'')}</td>
@@ -449,146 +340,31 @@
           <td>
             <button class="btn" data-act="approve" data-idx="${row._RowIndex}">Approve</button>
             <button class="btn danger" data-act="reject" data-idx="${row._RowIndex}">Reject</button>
-          </td>
-        `;
-        tb.appendChild(tr);
-      });
-      if (!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="11" class="muted" style="text-align:center;padding:18px">No pending rows</td>`; tb.appendChild(tr); }
+          </td>`; tb.appendChild(tr); }); if(!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="11" class="muted" style="text-align:center;padding:18px">No pending rows</td>`; tb.appendChild(tr); }
+      tb.querySelectorAll('button[data-act="approve"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'approveReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert('Approved → '+r.slug); loadReview(); }catch(e){ alert(e.message||e); } }));
+      tb.querySelectorAll('button[data-act="reject"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ await apiPost({ action:'rejectReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); loadReview(); }catch(e){ alert(e.message||e); } }));
+      byId('btnBulkApprove').onclick = async()=>{ const rows=Array.from(document.querySelectorAll('.rev-chk:checked')).map(x=> parseInt(x.dataset.idx,10)); if(!rows.length) return alert('Select at least one'); try{ const r=await apiPost({ action:'bulkApprove', rowIndices: rows, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert('Bulk approved: '+ r.results.filter(x=>x.ok).length +'/'+ r.results.length); loadReview(); }catch(e){ alert(e.message||e); } };
+    }catch(e){ alert(e.message||e); } }
 
-      // actions
-      tb.querySelectorAll('button[data-act="approve"]').forEach(btn=> btn.addEventListener('click', async()=>{
-        const idx = parseInt(btn.dataset.idx,10);
-        try{
-          const r = await apiPost({ action:'approveReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value });
-          alert('Approved → '+ r.slug);
-          loadReview();
-        }catch(e){ alert(e.message||e); }
-      }));
-      tb.querySelectorAll('button[data-act="reject"]').forEach(btn=> btn.addEventListener('click', async()=>{
-        const idx = parseInt(btn.dataset.idx,10);
-        try{
-          await apiPost({ action:'rejectReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value });
-          loadReview();
-        }catch(e){ alert(e.message||e); }
-      }));
+  // Modal + Admin edit/delete
+  function openModal(row){ currentRow=row; editMode=false; els.mTitle.textContent=row.Song||''; els.mVersion.textContent=row.VersionLabel||''; els.mArtist.textContent=row.VersionArtist||''; els.mSlug.textContent=row.Slug||''; els.mLang.textContent=row.Language||''; els.mTheme.textContent=row.Theme||''; els.mKeys.textContent=[row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / '); els.mAudio.textContent=row.LinkAudio||''; els.mAudio.href=row.LinkAudio||'#'; els.mLyricsLink.textContent=row.LinkLyrics||''; els.mLyricsLink.href=row.LinkLyrics||'#'; els.mLyrics.textContent=row.Lyrics||''; els.mNotes.textContent=row.ContextNotes||'';
+    // Prefill edit inputs
+    els.eSong.value=row.Song||''; els.eVersionLabel.value=row.VersionLabel||''; els.eVersionArtist.value=row.VersionArtist||''; els.eArrangement.value=row.Arrangement||''; els.eLanguage.value=row.Language||''; els.eTheme.value=row.Theme||''; els.eKey.value=row.Key||''; els.eKeyM.value=row.TypicalKeyMale||''; els.eKeyF.value=row.TypicalKeyFemale||''; els.eAudio.value=row.LinkAudio||''; els.eLyricsLink.value=row.LinkLyrics||''; els.eLyrics.value=row.Lyrics||''; els.eNotes.value=row.ContextNotes||'';
+    const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim()); els.mEdit.style.display=adminReady?'':'none'; els.mDelete.style.display=adminReady?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; els.modal.classList.add('open'); }
 
-      // bulk approve
-      document.getElementById('btnBulkApprove').onclick = async()=>{
-        const rows = Array.from(document.querySelectorAll('.rev-chk:checked')).map(x=> parseInt(x.dataset.idx,10));
-        if (!rows.length) return alert('Select at least one');
-        try{
-          const r = await apiPost({ action:'bulkApprove', rowIndices: rows, adminUser: els.adminUser.value, adminPin: els.adminPin.value });
-          alert('Bulk approved: '+ r.results.filter(x=>x.ok).length +'/'+ r.results.length);
-          loadReview();
-        }catch(e){ alert(e.message||e); }
-      };
-
-    }catch(e){ alert(e.message||e); }
-  }
-
-  // edit functions
-let currentRow = null;
-let editMode = false;
-
-  // modal
-  function openModal(row){
-    els.mTitle.textContent = row.Song || '';
-    els.mVersion.textContent = row.VersionLabel || '';
-    els.mArtist.textContent = row.VersionArtist || '';
-    els.mSlug.textContent = row.Slug || '';
-    els.mLang.textContent = row.Language || '';
-    els.mTheme.textContent = row.Theme || '';
-    els.mKeys.textContent = [row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / ');
-    els.mAudio.textContent = row.LinkAudio || ''; els.mAudio.href = row.LinkAudio || '#';
-    els.mLyricsLink.textContent = row.LinkLyrics || ''; els.mLyricsLink.href = row.LinkLyrics || '#';
-    els.mLyrics.textContent = row.Lyrics || '';
-    els.mNotes.textContent = row.ContextNotes || '';
-    els.modal.classList.add('open');
-
-    //song edit feature
-    els.eSong.value          = row.Song || '';
-    els.eVersionLabel.value  = row.VersionLabel || '';
-    els.eVersionArtist.value = row.VersionArtist || '';
-    els.eArrangement.value   = row.Arrangement || '';
-    els.eLanguage.value      = row.Language || '';
-    els.eTheme.value         = row.Theme || '';
-    els.eKey.value           = row.Key || '';
-    els.eKeyM.value          = row.TypicalKeyMale || '';
-    els.eKeyF.value          = row.TypicalKeyFemale || '';
-    els.eAudio.value         = row.LinkAudio || '';
-    els.eLyricsLink.value    = row.LinkLyrics || '';
-    els.eLyrics.value        = row.Lyrics || '';
-    els.eNotes.value         = row.ContextNotes || '';
-
-  // show/hide edit controls based on admin creds present
-  const adminReady = !!(els.adminUser.value.trim() && els.adminPin.value.trim());
-    els.mEdit.style.display = adminReady ? '' : 'none';
-    els.mSave.style.display = 'none';
-    els.mCancel.style.display = 'none';
-    els.editFields.style.display = 'none';
-
-    els.modal.classList.add('open');
-  }
-    }
- els.mEdit.addEventListener('click', ()=>{
-  if (!currentRow) return;
-  editMode = true;
-  els.mEdit.style.display = 'none';
-  els.mSave.style.display = '';
-  els.mCancel.style.display = '';
-  els.editFields.style.display = ''; // show inputs
-});
-
-els.mCancel.addEventListener('click', ()=>{
-  editMode = false;
-  els.mEdit.style.display = '';
-  els.mSave.style.display = 'none';
-  els.mCancel.style.display = 'none';
-  els.editFields.style.display = 'none';
-});
-
-els.mSave.addEventListener('click', async ()=>{
-  if (!currentRow) return;
-  try{
-    const body = {
-      action:'updateSong',
-      SongID: currentRow.SongID || '',
-      Slug:   currentRow.Slug   || '',
-      Song:           els.eSong.value,
-      VersionLabel:   els.eVersionLabel.value,
-      VersionArtist:  els.eVersionArtist.value,
-      Arrangement:    els.eArrangement.value,
-      Language:       els.eLanguage.value,
-      Theme:          els.eTheme.value,
-      Key:            els.eKey.value,
-      TypicalKeyMale: els.eKeyM.value,
-      TypicalKeyFemale: els.eKeyF.value,
-      LinkAudio:      els.eAudio.value,
-      LinkLyrics:     els.eLyricsLink.value,
-      Lyrics:         els.eLyrics.value,
-      ContextNotes:   els.eNotes.value,
-      adminUser: els.adminUser.value,
-      adminPin:  els.adminPin.value
-    };
-    const r = await apiPost(body);
-    alert('Updated ✔');
-
-    // Refresh currentRow with returned data, close modal, and re-run search for fresh list
-    currentRow = r.row;
-    els.modal.classList.remove('open');
-    document.getElementById('btnSearch').click();
-  }catch(e){ alert(e.message||e); }
-});
-
+  els.mEdit.addEventListener('click', ()=>{ if(!currentRow) return; editMode=true; els.mEdit.style.display='none'; els.mDelete.style.display='none'; els.mSave.style.display=''; els.mCancel.style.display=''; els.editFields.style.display=''; });
+  els.mCancel.addEventListener('click', ()=>{ editMode=false; const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim()); els.mEdit.style.display=adminReady?'':'none'; els.mDelete.style.display=adminReady?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; });
+  els.mSave.addEventListener('click', async ()=>{ if(!currentRow) return; try{ const r=await apiPost({ action:'updateSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', Song: els.eSong.value, VersionLabel: els.eVersionLabel.value, VersionArtist: els.eVersionArtist.value, Arrangement: els.eArrangement.value, Language: els.eLanguage.value, Theme: els.eTheme.value, Key: els.eKey.value, TypicalKeyMale: els.eKeyM.value, TypicalKeyFemale: els.eKeyF.value, LinkAudio: els.eAudio.value, LinkLyrics: els.eLyricsLink.value, Lyrics: els.eLyrics.value, ContextNotes: els.eNotes.value, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert('Updated ✔'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
+  els.mDelete.addEventListener('click', async ()=>{ if(!currentRow) return; if(!confirm('Delete this song?')) return; const hard = confirm('Hard delete (no Archive)? OK = Hard, Cancel = Soft'); try{ const r=await apiPost({ action:'deleteSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', reason:'Removed via UI', hard, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert(r.hardDeleted? 'Deleted permanently':'Deleted (archived)'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
   els.mClose.addEventListener('click', ()=> els.modal.classList.remove('open'));
   els.modal.addEventListener('click', (e)=>{ if(e.target===els.modal) els.modal.classList.remove('open'); });
 
-  // helpers
+  // Helpers
   function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
   function selectTab(name){ document.querySelector(`.tab[data-tab="${name}"]`).click(); }
 
-  // initial
-  if (els.apiBase.value) { (async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await loadLookups(); } catch{ setOnline(false);} })(); }
+  // Init
+  if (els.apiBase.value) { (async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await loadLookups(); }catch{ setOnline(false) } })(); }
 })();
 </script>
 </body>
