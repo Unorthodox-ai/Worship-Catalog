@@ -898,10 +898,12 @@
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal){
     try{
+      let basePath = location.pathname;
+      if(!basePath.endsWith('/')) basePath = basePath.slice(0, basePath.lastIndexOf('/')+1);
       await OneSignal.init({
         appId: ONESIGNAL_APP_ID,
-        serviceWorkerPath: 'push/onesignal/OneSignalSDKWorker.js',
-        serviceWorkerParam: { scope: '/push/onesignal/' }
+        serviceWorkerPath: (basePath + 'push/onesignal/OneSignalSDKWorker.js').replace(/^\//,''),
+        serviceWorkerParam: { scope: basePath + 'push/onesignal/' }
       });
       oneSignalReady = true;
       refreshNotifyBanner();
