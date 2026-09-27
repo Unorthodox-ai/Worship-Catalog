@@ -4,8 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wells Salvation - Worship Catalog</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="theme-color" content="#225273" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Worship" />
   <style>
-    :root{--bg:#ffffff;--fg:#111;--muted:#666;--line:#e6e6e6;--accent:#0b57d0;--chip:#f3f4f6;--danger:#b00020}
+    :root{--bg:#ffffff;--fg:#111;--muted:#666;--line:#e6e6e6;--accent:#0b57d0;--chip:#f3f4f6;--danger:#b00020;--ok:#0a7d34}
     *{box-sizing:border-box} html,body{height:100%} body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--fg);background:var(--bg)}
     .wrap{max-width:1100px;margin:0 auto;padding:16px}
     .top{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0}
@@ -13,22 +19,25 @@
     .brand h1{font-size:18px;margin:0;font-weight:650}
     .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;color:#333}
     .row{display:flex;gap:10px;align-items:center}
-    .input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;outline:none}
+    .wrap-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;outline:none;font:inherit;background:#fff;color:inherit}
     .input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-    .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer}
-    .btn[disabled]{opacity:.6;cursor:not-allowed}
+    .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;cursor:pointer;font:inherit}
+    .btn[disabled]{opacity:.55;cursor:not-allowed}
     .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
     .btn.danger{background:#fff;border-color:var(--danger);color:var(--danger)}
-    .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-top:10px}
-    .tab{padding:8px 12px;border:1px solid var(--line);border-bottom:none;border-top-left-radius:10px;border-top-right-radius:10px;background:#fafafa;cursor:pointer}
+    .btn.small{padding:5px 9px;font-size:12px;border-radius:8px}
+    .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-top:10px;flex-wrap:wrap}
+    .tab{padding:8px 12px;border:1px solid var(--line);border-bottom:none;border-top-left-radius:10px;border-top-right-radius:10px;background:#fafafa;cursor:pointer;font:inherit}
     .tab.active{background:#fff;border-color:var(--accent);color:var(--accent)}
     .card{border:1px solid var(--line);border-radius:12px;background:#fff}
-    .card .head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);color:var(--muted)}
+    .card .head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);color:var(--muted);gap:8px;flex-wrap:wrap}
     .grid{display:grid;gap:10px}
     .g-3{grid-template-columns:repeat(3,1fr)}
     .g-4{grid-template-columns:repeat(4,1fr)}
     .g-5{grid-template-columns:repeat(5,1fr)}
     @media (max-width:900px){.g-5,.g-4{grid-template-columns:1fr}}
+    @media (max-width:700px){.g-3{grid-template-columns:1fr}}
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px;vertical-align:top;border-top:1px solid var(--line)}
     th{font-weight:600;text-align:left;background:#fafafa}
@@ -36,12 +45,60 @@
     .list-row{cursor:pointer}
     .chips{display:flex;gap:6px;flex-wrap:wrap}
     .hidden{display:none}
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:16px;z-index:50}
     .modal.open{display:flex}
     .modal .panel{max-width:800px;width:100%;max-height:90vh;overflow:auto}
     .row-end{display:flex;gap:10px;justify-content:flex-end}
     .settings{border:1px dashed var(--line);border-radius:10px;padding:8px}
+    details.settings summary{cursor:pointer;color:var(--muted);font-weight:600}
+
+    /* --- v3 additions --- */
+    .signbar{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:10px 0;background:#fafcff;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .leader-chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;font-weight:600;color:#fff;white-space:nowrap}
+    .leader-dot{width:20px;height:20px;border-radius:50%;background:#fff;color:#111;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+    .leader-chip.outline{background:#fff;border:1.5px solid currentColor;color:inherit}
+    .leader-chip.outline .leader-dot{background:currentColor;color:#fff}
+    .voice-badge{font-size:10px;opacity:.85}
+    .gate{padding:28px 16px;text-align:center;color:var(--muted)}
+    .gate .btn{margin-top:10px}
+    .banner{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fbfbfb;margin-bottom:12px}
+    .banner.on{border-color:#bfe3cc;background:#f2fbf5}
+    .banner.off{border-color:var(--line)}
+    .banner.blocked{border-color:#f0c9c9;background:#fdf4f4}
+    .svc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:12px}
+    .svc-head h2{margin:0;font-size:18px}
+    .status-pill{font-size:11px;border-radius:999px;padding:2px 9px;border:1px solid var(--line);color:var(--muted)}
+    .status-pill.done{background:#eef7ee;color:var(--ok);border-color:#bfe3cc}
+    .badges{padding:0 12px 12px}
+    .badge-line{font-size:12.5px;color:#5a4600;background:#fff8e1;border:1px solid #f0e0a0;border-radius:8px;padding:6px 10px;margin-bottom:6px}
+    .sunlist{list-style:none;margin:0;padding:0}
+    .sunlist li{display:flex;gap:10px;align-items:flex-start;padding:12px;border-top:1px solid var(--line)}
+    .sunlist li:first-child{border-top:none}
+    .sunlist .ord{color:var(--muted);width:1.6em;flex:none;text-align:right;padding-top:2px}
+    .sunlist .main{flex:1;min-width:0}
+    .sunlist .title{font-weight:650}
+    .sunlist .meta{color:var(--muted);font-size:12.5px;margin-top:1px}
+    .sunlist .tagrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+    .tag{font-size:11.5px;border-radius:7px;padding:2px 8px;background:var(--chip);border:1px solid var(--line)}
+    .tag.key{font-weight:700;background:#eaf1fd;border-color:#cfe0fb;color:#0b57d0}
+    .flow{font-size:12.5px;color:#555;font-style:italic;margin-top:4px}
+    .removed{opacity:.55;text-decoration:line-through}
+    .empty{padding:26px;text-align:center;color:var(--muted)}
+    .style-picker{display:flex;gap:6px;flex-wrap:wrap}
+    .style-check{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;user-select:none}
+    .style-check.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    .practice-item{border-top:1px solid var(--line);padding:10px 12px;display:grid;gap:8px;grid-template-columns:auto 1fr auto;align-items:start}
+    .practice-item:first-child{border-top:none}
+    .practice-item .fields{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    @media (max-width:800px){.practice-item{grid-template-columns:1fr}.practice-item .fields{grid-template-columns:1fr 1fr}}
+    .practice-item .fields input,.practice-item .fields select{padding:6px 8px;font-size:13px}
+    .conflict{font-size:12px;color:var(--danger);margin-top:4px}
+    .cap{font-size:11px;color:var(--muted);margin-top:4px}
+    .colswatches{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+    .swatch{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+    .swatch.sel{border-color:#111}
   </style>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
   <div class="wrap">
@@ -56,23 +113,79 @@
       </div>
     </header>
 
-    <section class="settings" style="margin-bottom:10px">
-      <div class="grid g-4">
+    <!-- LEADER SIGN-IN -->
+    <div class="signbar" id="signbar">
+      <span class="muted" style="font-size:13px">Leader sign-in:</span>
+      <div id="signedOutRow" class="wrap-row" style="flex:1">
+        <select id="loginName" style="max-width:160px"></select>
+        <input id="loginCode" class="input" placeholder="Team code" style="max-width:160px" />
+        <label class="muted" style="font-size:12px;display:flex;gap:4px;align-items:center"><input type="checkbox" id="loginRemember" checked style="width:auto" /> Remember me</label>
+        <button class="btn primary small" id="btnSignIn">Sign in</button>
+      </div>
+      <div id="signedInRow" class="wrap-row hidden" style="flex:1">
+        <span class="muted" style="font-size:13px">Signed in as</span>
+        <span id="signedInChip"></span>
+        <button class="btn small" id="btnSignOut">Sign out</button>
+      </div>
+    </div>
+
+    <!-- ADMIN TOOLS -->
+    <details class="settings" style="margin-bottom:10px">
+      <summary>Admin tools</summary>
+      <div class="grid g-4" style="padding-top:8px">
         <input id="adminUser" class="input" placeholder="Admin User (Name or Email in Users sheet)" />
         <input id="adminPin" class="input" placeholder="ADMIN_PIN" />
         <button class="btn" id="btnSaveSettings">Save Settings</button>
-        <span class="muted">Saved in your browser only</span>
+        <button class="btn" id="btnTestPush">Send test notification</button>
       </div>
-    </section>
+      <div class="muted" style="font-size:12px;padding-top:6px">Saved in your browser only. Test notification goes to everyone currently subscribed.</div>
+    </details>
 
     <nav class="tabs">
-      <button class="tab active" data-tab="catalog">Catalog</button>
+      <button class="tab active" data-tab="sunday">This Sunday</button>
+      <button class="tab" data-tab="catalog">Catalog</button>
+      <button class="tab" data-tab="practice">Practice</button>
       <button class="tab" data-tab="add">Add Song</button>
       <button class="tab" data-tab="review">Review Queue</button>
     </nav>
 
+    <!-- THIS SUNDAY -->
+    <section id="view-sunday" class="view" style="margin-top:12px">
+      <div class="banner off" id="notifyBanner">
+        <div class="wrap-row" style="justify-content:space-between">
+          <div>
+            <strong id="notifyTitle">🔔 Get notified when a leader posts or changes Sunday's songs</strong>
+            <div class="muted" id="notifyStatus" style="font-size:12.5px;margin-top:2px">Checking this browser…</div>
+          </div>
+          <button class="btn primary small" id="btnNotify">Turn on notifications</button>
+        </div>
+        <details style="margin-top:8px">
+          <summary class="muted" style="font-size:12.5px;cursor:pointer">Add this site to your home screen</summary>
+          <div style="font-size:12.5px;color:#555;margin-top:6px;line-height:1.6">
+            <strong>iPhone (Safari):</strong> tap Share, then "Add to Home Screen". Needs iOS 16.4+ for notifications, and you must open the app from the home screen icon once before turning notifications on.<br/>
+            <strong>Android (Chrome):</strong> tap ⋮ then "Add to Home screen" or "Install app".
+          </div>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="svc-head">
+          <div>
+            <h2 id="sunTitle">Loading…</h2>
+            <div class="muted" id="sunSub" style="font-size:12.5px"></div>
+          </div>
+          <div class="row" style="gap:8px">
+            <select id="sunPicker" style="width:auto;min-width:180px"></select>
+            <button class="btn small" id="btnSunRefresh">Refresh</button>
+          </div>
+        </div>
+        <div class="badges hidden" id="sunBadges"></div>
+        <ul class="sunlist" id="sunList"></ul>
+      </div>
+    </section>
+
     <!-- CATALOG -->
-    <section id="view-catalog" class="view" style="margin-top:12px">
+    <section id="view-catalog" class="view hidden" style="margin-top:12px">
       <div class="card">
         <div class="head">Search</div>
         <div class="grid g-5" style="padding:12px">
@@ -112,9 +225,72 @@
       </div>
     </section>
 
-    <!-- ADD -->
+    <!-- PRACTICE -->
+    <section id="view-practice" class="view hidden" style="margin-top:12px">
+      <div id="practiceGate" class="card gate hidden">
+        <div>Sign in as a leader above to build or edit Sunday's setlist.</div>
+        <button class="btn primary" id="btnGateFocus">Go to sign-in</button>
+      </div>
+
+      <div id="practiceBody" class="hidden">
+        <div class="card">
+          <div class="head">Sunday</div>
+          <div class="grid g-4" style="padding:12px">
+            <input id="pDate" type="date" class="input" />
+            <input id="pTheme" class="input" placeholder="Theme of the day (optional)" />
+            <button class="btn primary" id="btnLoadSunday">Load / Create</button>
+            <div class="row" style="gap:8px;justify-content:flex-end">
+              <span id="pStatusPill" class="status-pill"></span>
+              <button class="btn danger small" id="btnMarkDone">Mark Done</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="head">Add a song</div>
+          <div class="grid g-4" style="padding:12px">
+            <select id="aLeader"></select>
+            <input id="aSongSearch" class="input" list="songOptions" placeholder="Type a song title…" />
+            <datalist id="songOptions"></datalist>
+            <select id="aServicePart"></select>
+            <input id="aKey" class="input" placeholder="Key (leave blank for auto)" />
+          </div>
+          <div class="grid g-3" style="padding:0 12px 12px">
+            <div>
+              <div class="muted" style="font-size:12px;margin-bottom:4px">Style (pick up to 2)</div>
+              <div class="style-picker" id="aStylePicker"></div>
+            </div>
+            <input id="aFlowNote" class="input" placeholder="Flow note (order of verses, key change, cues…)" style="grid-column:2/4" />
+          </div>
+          <div class="row-end" style="padding:0 12px 12px">
+            <button class="btn primary" id="btnAddItem">Add to list</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="head">Post</div>
+          <div class="grid g-4" style="padding:12px">
+            <select id="postLeader"></select>
+            <span id="postStatus" class="muted" style="align-self:center"></span>
+            <button class="btn primary" id="btnPost" style="grid-column:4/5">Post this leader's list</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="head"><span id="pCount" class="muted">0 song(s)</span></div>
+          <div class="badges hidden" id="pBadges"></div>
+          <div id="pList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADD SONG -->
     <section id="view-add" class="view hidden" style="margin-top:12px">
-      <div class="card">
+      <div id="addGate" class="card gate hidden">
+        <div>Sign in as a leader above to suggest a new song for the catalogue.</div>
+        <button class="btn primary" id="btnAddGateFocus">Go to sign-in</button>
+      </div>
+      <div id="addBody" class="card hidden">
         <div class="head">Add Song → Review Queue</div>
         <div class="grid g-3" style="padding:12px">
           <input id="fSong" class="input" placeholder="Song *" />
@@ -130,7 +306,6 @@
           <input id="fLyricsLink" class="input" placeholder="Lyrics link" />
           <textarea id="fLyrics" class="input" placeholder="Lyrics (paste or summary)" rows="3"></textarea>
           <textarea id="fNotes" class="input" placeholder="Context notes (tempo, arrangement differences, scripture, etc.)" rows="3"></textarea>
-          <input id="fCreatedBy" class="input" placeholder="Your name/email" />
           <div class="row-end" style="grid-column:1/-1">
             <button class="btn" id="btnClear">Clear</button>
             <button class="btn primary" id="btnAdd">Send to Review</button>
@@ -173,7 +348,7 @@
     </section>
   </div>
 
-  <!-- DETAILS MODAL -->
+  <!-- DETAILS MODAL (Catalog + Lyrics viewer) -->
   <div id="modal" class="modal">
     <div class="panel card">
       <div class="head">
@@ -250,66 +425,172 @@
 
 <script>
 (function(){
-  const COLS = [
-    'SongID','Song','VersionLabel','VersionArtist','Arrangement','Language','Theme','Key',
-    'TypicalKeyMale','TypicalKeyFemale','Lyrics','LinkAudio','LinkLyrics','ContextNotes',
-    'CreatedAt','CreatedBy','UpdatedAt','UpdatedBy','Slug','Status'
-  ];
+  const ONESIGNAL_APP_ID = 'ae50fc71-76ae-47cd-9601-f2c60f179255';
+  const STYLE_SEP = '|';
 
-  const els = {
-    tabs: document.querySelectorAll('.tab'),
-    views: { catalog: byId('view-catalog'), add: byId('view-add'), review: byId('view-review') },
-    apiBase: byId('apiBase'), adminUser: byId('adminUser'), adminPin: byId('adminPin'),
-    btnTest: byId('btnTest'), btnSaveSettings: byId('btnSaveSettings'), healthChip: byId('healthChip'),
-    // catalog
-    qSong: byId('qSong'), qTheme: byId('qTheme'), qLanguage: byId('qLanguage'), qKey: byId('qKey'),
-    qVersionLabel: byId('qVersionLabel'), qVersionArtist: byId('qVersionArtist'), qArrangement: byId('qArrangement'),
-    btnSearch: byId('btnSearch'), tblCatalog: qs('#tblCatalog tbody'), resCount: byId('resCount'),
-    // add
-    fSong: byId('fSong'), fVersionLabel: byId('fVersionLabel'), fVersionArtist: byId('fVersionArtist'), fArrangement: byId('fArrangement'),
-    fLanguage: byId('fLanguage'), fTheme: byId('fTheme'), fKey: byId('fKey'), fKeyM: byId('fKeyM'), fKeyF: byId('fKeyF'),
-    fAudio: byId('fAudio'), fLyricsLink: byId('fLyricsLink'), fLyrics: byId('fLyrics'), fNotes: byId('fNotes'), fCreatedBy: byId('fCreatedBy'),
-    btnAdd: byId('btnAdd'), btnClear: byId('btnClear'),
-    // review
-    tblReview: qs('#tblReview tbody'), revCount: byId('revCount'), btnRefreshReview: byId('btnRefreshReview'), btnBulkApprove: byId('btnBulkApprove'), chkAll: byId('chkAll'),
-    // modal (view)
-    modal: byId('modal'), mClose: byId('mClose'), mTitle: byId('mTitle'), mVersion: byId('mVersion'), mArtist: byId('mArtist'), mSlug: byId('mSlug'),
-    mLang: byId('mLang'), mTheme: byId('mTheme'), mKeys: byId('mKeys'), mAudio: byId('mAudio'), mLyricsLink: byId('mLyricsLink'), mLyrics: byId('mLyrics'), mNotes: byId('mNotes'),
-    // modal (edit)
-    mEdit: byId('mEdit'), mSave: byId('mSave'), mCancel: byId('mCancel'), mDelete: byId('mDelete'), editFields: byId('editFields'),
-    eSong: byId('eSong'), eVersionLabel: byId('eVersionLabel'), eVersionArtist: byId('eVersionArtist'), eArrangement: byId('eArrangement'), eLanguage: byId('eLanguage'),
-    eTheme: byId('eTheme'), eKey: byId('eKey'), eKeyM: byId('eKeyM'), eKeyF: byId('eKeyF'), eAudio: byId('eAudio'), eLyricsLink: byId('eLyricsLink'), eLyrics: byId('eLyrics'), eNotes: byId('eNotes')
-  };
+  const els = {};
+  document.querySelectorAll('[id]').forEach(n => els[n.id] = n);
 
   let currentRow = null; let editMode = false;
+  let leaders = []; let lookups = { themes:[], languages:[], serviceParts:[], styles:[] };
+  let session = null;          // { name, teamCode }
+  let sunData = null;          // last /getSunday (or /getSundayLeader) response
+  let songIndex = {};          // slug -> song row, for the Add-a-song datalist
+  let pollTimer = null;
+  let aStyles = [];            // currently picked styles in the Add-a-song form (max 2)
 
-  // Local storage
-  const LS = { get(k,d=''){ try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d} }, set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} } };
-  els.apiBase.value = LS.get('wc_api_base',''); els.adminUser.value = LS.get('wc_admin_user',''); els.adminPin.value = LS.get('wc_admin_pin','');
+  // ---------- tiny helpers ----------
+  function byId(id){ return document.getElementById(id) }
+  function qs(sel){ return document.querySelector(sel) }
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function selectTab(name){ const b=document.querySelector(`.tab[data-tab="${name}"]`); if(b) b.click(); }
+  const LS = { get(k,d=''){ try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d} }, set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} }, del(k){ try{localStorage.removeItem(k)}catch{} } };
+
+  function fmtDate(iso){
+    if(!iso) return '';
+    const [y,m,d] = iso.split('-').map(Number);
+    if(!y) return iso;
+    const dt = new Date(y, m-1, d, 12);
+    return dt.toLocaleDateString(undefined, { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  }
+  function ago(iso){
+    if(!iso) return '';
+    const t = Date.parse(iso.length===10 ? iso+'T00:00:00' : iso);
+    if(isNaN(t)) return '';
+    const s = Math.max(0, Math.round((Date.now()-t)/1000));
+    if(s<60) return 'just now';
+    if(s<3600) return Math.round(s/60)+'m ago';
+    if(s<86400) return Math.round(s/3600)+'h ago';
+    return Math.round(s/86400)+'d ago';
+  }
+  function styleList(s){ return String(s||'').split(STYLE_SEP).filter(Boolean); }
+  function styleTxt(s){ return styleList(s).join(' + '); }
+  function leaderByName(name){ return leaders.find(l => l.name.toLowerCase()===String(name||'').toLowerCase()); }
+  function leaderChipHtml(name, opts){
+    opts = opts||{};
+    const l = leaderByName(name);
+    const color = l ? l.color : '#888';
+    const initials = l ? l.initials : (name||'?').slice(0,2);
+    const voice = l && l.voice ? ` <span class="voice-badge">(${l.voice})</span>` : '';
+    return `<span class="leader-chip" style="background:${color}" title="${esc(name)}"><span class="leader-dot" style="color:${color}">${esc(initials)}</span>${esc(name)}${opts.voice!==false?voice:''}</span>`;
+  }
+
+  // ---------- API ----------
+  function apiGet(params){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) return Promise.reject(new Error('Set API URL')); const qsp = new URLSearchParams(params); return fetch(`${base}?${qsp.toString()}`).then(r=>{ if(!r.ok) throw new Error(`GET ${params.action} ${r.status}`); return r.json(); }); }
+  async function apiPost(body){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL'); try{ const r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},redirect:'follow',body:JSON.stringify(body)}); if(!r.ok) throw new Error(`POST ${body.action} ${r.status}`); return await r.json(); }catch(e){ const params=new URLSearchParams(Object.entries(body).map(([k,v])=>[k, typeof v==='object'? JSON.stringify(v):(v??'')])); const r2=await fetch(base,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},redirect:'follow',body:params.toString()}); if(!r2.ok) throw new Error(`POST(Fallback) ${body.action} ${r2.status}`); return await r2.json(); } }
+  function authFields(){
+    if(session) return { leader: session.name, teamCode: session.teamCode };
+    if(els.adminUser.value.trim() && els.adminPin.value.trim()) return { adminUser: els.adminUser.value.trim(), adminPin: els.adminPin.value.trim() };
+    return {};
+  }
+  function requireAuthOrThrow(){
+    const a = authFields();
+    if(!a.leader && !a.adminUser) throw new Error('Sign in as a leader first');
+    return a;
+  }
 
   function setOnline(ok){ els.healthChip.textContent = ok ? 'Online' : 'Offline'; els.healthChip.style.background = ok? '#e8f0fe':'#f3f4f6'; els.healthChip.style.borderColor = ok? '#90c2ff':'#e6e6e6'; els.healthChip.style.color = ok? '#0b57d0':'#333'; }
-  function byId(id){ return document.getElementById(id) } function qs(sel){ return document.querySelector(sel) }
-
-  async function apiGet(params){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL'); const qs = new URLSearchParams(params); const r = await fetch(`${base}?${qs.toString()}`); if(!r.ok) throw new Error(`GET ${params.action} ${r.status}`); return r.json(); }
-  async function apiPost(body){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL'); try{ const r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},redirect:'follow',body:JSON.stringify(body)}); if(!r.ok) throw new Error(`POST ${body.action} ${r.status}`); return await r.json(); }catch(e){ const params=new URLSearchParams(Object.entries(body).map(([k,v])=>[k, typeof v==='object'? JSON.stringify(v):(v??'')])); const r2=await fetch(base,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},redirect:'follow',body:params.toString()}); if(!r2.ok) throw new Error(`POST(Fallback) ${body.action} ${r2.status}`); return await r2.json(); } }
-
-  // Tabs
-  els.tabs.forEach(btn=> btn.addEventListener('click', ()=>{ els.tabs.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); const t=btn.dataset.tab; Object.keys(els.views).forEach(k=> els.views[k].classList.toggle('hidden', k!==t)); if(t==='review') loadReview(); }));
-
-  // Settings
-  els.btnSaveSettings.addEventListener('click', ()=>{ LS.set('wc_api_base', els.apiBase.value.trim()); LS.set('wc_admin_user', els.adminUser.value.trim()); LS.set('wc_admin_pin', els.adminPin.value.trim()); alert('Saved.'); });
-  els.btnTest.addEventListener('click', async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await loadLookups(); alert('Backend OK: '+(r.time||'')); }catch(e){ setOnline(false); alert(e.message||e); } });
-
-  // Lookups
-  async function loadLookups(){ try{ const r=await apiGet({action:'listLookups'}); fillSelect(els.qTheme,['','Any'].concat(r.themes||[])); fillSelect(els.qLanguage,['','Any'].concat(r.languages||[])); fillSelect(els.fTheme,[''].concat(r.themes||[])); fillSelect(els.fLanguage,[''].concat(r.languages||[])); }catch(e){} }
   function fillSelect(sel,arr){ sel.innerHTML=''; arr.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i===0?'':v; o.textContent=v||'--'; sel.appendChild(o); }); }
 
-  // Search
-  function doSearch(){ apiGet({ action:'searchSongs', song: els.qSong.value, theme: els.qTheme.value, language: els.qLanguage.value, key: els.qKey.value, versionlabel: els.qVersionLabel.value, versionartist: els.qVersionArtist.value, arrangement: els.qArrangement.value }).then(r=> renderCatalog(r.rows||[])).catch(e=> alert(e.message||e)); }
+  // ================= SESSION (leader sign-in) =================
+  function loadSession(){
+    const n = LS.get('wc_leader_name',''); const c = LS.get('wc_leader_code','');
+    if(n && c) session = { name:n, teamCode:c };
+    renderSession();
+  }
+  function renderSession(){
+    if(session){
+      els.signedOutRow.classList.add('hidden'); els.signedInRow.classList.remove('hidden');
+      els.signedInChip.innerHTML = leaderChipHtml(session.name);
+    } else {
+      els.signedOutRow.classList.remove('hidden'); els.signedInRow.classList.add('hidden');
+    }
+    renderGates();
+  }
+  function renderGates(){
+    const signedIn = !!session || !!(els.adminUser.value.trim() && els.adminPin.value.trim());
+    els.practiceGate.classList.toggle('hidden', signedIn);
+    els.practiceBody.classList.toggle('hidden', !signedIn);
+    els.addGate.classList.toggle('hidden', signedIn);
+    els.addBody.classList.toggle('hidden', !signedIn);
+  }
+  els.btnSignIn.addEventListener('click', async ()=>{
+    const name = els.loginName.value; const code = els.loginCode.value.trim();
+    if(!name) return alert('Pick your name');
+    if(!code) return alert('Enter the team code');
+    try{
+      await apiPost({ action:'verifyLeader', leader:name, teamCode:code });
+      session = { name, teamCode: code };
+      if(els.loginRemember.checked){ LS.set('wc_leader_name', name); LS.set('wc_leader_code', code); }
+      els.loginCode.value='';
+      renderSession();
+      loadSundayForCurrentTab();
+    }catch(e){ alert(e.message||e); }
+  });
+  els.btnSignOut.addEventListener('click', ()=>{ session=null; LS.del('wc_leader_name'); LS.del('wc_leader_code'); renderSession(); loadSundayForCurrentTab(); });
+  [els.adminUser, els.adminPin].forEach(inp => inp.addEventListener('input', renderGates));
+  els.btnGateFocus.addEventListener('click', ()=> els.loginName.focus());
+  els.btnAddGateFocus.addEventListener('click', ()=> els.loginName.focus());
+
+  // ================= TABS =================
+  document.querySelectorAll('.tab').forEach(btn=> btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    const t = btn.dataset.tab;
+    ['sunday','catalog','practice','add','review'].forEach(k => byId('view-'+k).classList.toggle('hidden', k!==t));
+    if(t==='review') loadReview();
+    if(t==='sunday' || t==='practice') loadSundayForCurrentTab();
+  }));
+  function loadSundayForCurrentTab(){
+    const activeTab = document.querySelector('.tab.active').dataset.tab;
+    if(activeTab==='practice') loadPractice(); else loadSundayPublic();
+  }
+
+  // ================= SETTINGS =================
+  els.apiBase.value = LS.get('wc_api_base',''); els.adminUser.value = LS.get('wc_admin_user',''); els.adminPin.value = LS.get('wc_admin_pin','');
+  els.btnSaveSettings.addEventListener('click', ()=>{ LS.set('wc_api_base', els.apiBase.value.trim()); LS.set('wc_admin_user', els.adminUser.value.trim()); LS.set('wc_admin_pin', els.adminPin.value.trim()); renderGates(); alert('Saved.'); });
+  els.btnTest.addEventListener('click', async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await bootstrap(); alert('Backend OK: '+(r.time||'')); }catch(e){ setOnline(false); alert(e.message||e); } });
+  els.btnTestPush.addEventListener('click', async()=>{ try{ const r = await apiPost({ action:'testNotification', adminUser: els.adminUser.value.trim(), adminPin: els.adminPin.value.trim() }); alert(r.ok? 'Sent. If nobody is subscribed yet, nothing will show up.' : 'Failed: '+(r.error||'')); }catch(e){ alert(e.message||e); } });
+
+  async function bootstrap(){
+    try{
+      const [lk, ll] = await Promise.all([ apiGet({action:'listLookups'}), apiGet({action:'listLeaders'}) ]);
+      fillSelect(els.qTheme,['','Any'].concat(lk.themes||[])); fillSelect(els.qLanguage,['','Any'].concat(lk.languages||[]));
+      fillSelect(els.fTheme,[''].concat(lk.themes||[])); fillSelect(els.fLanguage,[''].concat(lk.languages||[]));
+      leaders = ll.leaders||[];
+      fillLeaderPickers();
+    }catch(e){ /* ignore; Test button will surface errors */ }
+    try{
+      const lk3 = await apiGet({action:'listLookupsV3'});
+      lookups = lk3;
+      fillSelect(els.aServicePart, [''].concat(lookups.serviceParts||[]));
+      renderStylePicker();
+    }catch(e){ /* v3 not deployed yet? leave lookups empty */ }
+  }
+  function fillLeaderPickers(){
+    const opts = leaders.map(l => `<option value="${esc(l.name)}">${esc(l.name)}${l.voice?' ('+l.voice+')':''}</option>`).join('');
+    els.loginName.innerHTML = opts;
+    els.aLeader.innerHTML = opts;
+    els.postLeader.innerHTML = opts;
+    if(session){ els.aLeader.value = session.name; els.postLeader.value = session.name; }
+    renderSession();
+  }
+  function renderStylePicker(){
+    els.aStylePicker.innerHTML = (lookups.styles||[]).map(s => `<span class="style-check" data-style="${esc(s)}">${esc(s)}</span>`).join('');
+    els.aStylePicker.querySelectorAll('.style-check').forEach(chip => chip.addEventListener('click', ()=>{
+      const s = chip.dataset.style;
+      const i = aStyles.indexOf(s);
+      if(i>=0) aStyles.splice(i,1);
+      else { if(aStyles.length>=2) aStyles.shift(); aStyles.push(s); }
+      els.aStylePicker.querySelectorAll('.style-check').forEach(c => c.classList.toggle('on', aStyles.includes(c.dataset.style)));
+    }));
+  }
+
+  // ================= CATALOG (search / add / review — mostly unchanged) =================
+  function doSearch(){ apiGet({ action:'searchSongs', song: els.qSong.value, theme: els.qTheme.value, language: els.qLanguage.value, key: els.qKey.value, versionlabel: els.qVersionLabel.value, versionartist: els.qVersionArtist.value, arrangement: els.qArrangement.value }).then(r=> { renderCatalog(r.rows||[]); indexSongs(r.rows||[]); }).catch(e=> alert(e.message||e)); }
   els.btnSearch.addEventListener('click', doSearch);
   [els.qSong,els.qKey,els.qVersionLabel,els.qVersionArtist,els.qArrangement].forEach(inp=> inp.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); }));
 
-  function renderCatalog(rows){ els.resCount.textContent=`${rows.length} result(s)`; const tb=els.tblCatalog; tb.innerHTML=''; rows.forEach(row=>{ const tr=document.createElement('tr'); tr.className='list-row'; tr.innerHTML=`
+  function renderCatalog(rows){ els.resCount.textContent=`${rows.length} result(s)`; const tb=els.tblCatalog.querySelector('tbody'); tb.innerHTML=''; rows.forEach(row=>{ const tr=document.createElement('tr'); tr.className='list-row'; tr.innerHTML=`
         <td><div style="font-weight:600">${esc(row.Song)}</div></td>
         <td>${esc(row.VersionLabel||'')}</td>
         <td>${esc(row.VersionArtist||'')}</td>
@@ -318,15 +599,40 @@
         <td>${esc(row.Key||'')}</td>
         <td class="muted">${esc(row.ContextNotes||'')}</td>`; tr.addEventListener('click',()=> openModal(row)); tb.appendChild(tr); }); if(!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="7" class="muted" style="text-align:center;padding:18px">No results</td>`; tb.appendChild(tr); } }
 
+  function indexSongs(rows){ rows.forEach(r => { if(r.Slug) songIndex[r.Slug]=r; }); refreshSongOptions(); }
+  function refreshSongOptions(){
+    const seen = new Set();
+    els.songOptions.innerHTML = Object.values(songIndex).map(r=>{
+      const label = r.Song + (r.VersionLabel? ' — '+r.VersionLabel : '');
+      if(seen.has(label)) return ''; seen.add(label);
+      return `<option value="${esc(label)}" data-song-id="${esc(r.SongID)}"></option>`;
+    }).join('');
+  }
+  // preload a broad set of songs (empty search) so Add-a-song works before anyone visits Catalog
+  apiGet({action:'searchSongs'}).then(r=>{ if(r.rows) indexSongs(r.rows); }).catch(()=>{});
+  function findSongByTypedLabel(text){
+    const t = text.trim();
+    return Object.values(songIndex).find(r => (r.Song + (r.VersionLabel? ' — '+r.VersionLabel : '')) === t) ||
+           Object.values(songIndex).find(r => r.Song.toLowerCase() === t.toLowerCase());
+  }
+
   // Add song
   byId('btnClear').addEventListener('click', clearForm);
-  function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes','fCreatedBy'].forEach(id=> els[id].value=''); }
-  byId('btnAdd').addEventListener('click', async()=>{ if(!els.fSong.value.trim()) return alert('Song is required'); try{ const r=await apiPost({ action:'addToReviewQueue', Song: els.fSong.value, VersionLabel: els.fVersionLabel.value, VersionArtist: els.fVersionArtist.value, Arrangement: els.fArrangement.value, Language: els.fLanguage.value, Theme: els.fTheme.value, Key: els.fKey.value, TypicalKeyMale: els.fKeyM.value, TypicalKeyFemale: els.fKeyF.value, LinkAudio: els.fAudio.value, LinkLyrics: els.fLyricsLink.value, Lyrics: els.fLyrics.value, ContextNotes: els.fNotes.value, CreatedBy: els.fCreatedBy.value }); alert('Sent to review (row '+r.rowIndex+')'); clearForm(); selectTab('review'); await loadReview(); }catch(e){ alert(e.message||e); } });
+  function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes'].forEach(id=> els[id].value=''); }
+  byId('btnAdd').addEventListener('click', async()=>{
+    if(!els.fSong.value.trim()) return alert('Song is required');
+    let auth; try{ auth = requireAuthOrThrow(); }catch(e){ return alert(e.message); }
+    try{
+      const r=await apiPost({ action:'addToReviewQueue', ...auth, Song: els.fSong.value, VersionLabel: els.fVersionLabel.value, VersionArtist: els.fVersionArtist.value, Arrangement: els.fArrangement.value, Language: els.fLanguage.value, Theme: els.fTheme.value, Key: els.fKey.value, TypicalKeyMale: els.fKeyM.value, TypicalKeyFemale: els.fKeyF.value, LinkAudio: els.fAudio.value, LinkLyrics: els.fLyricsLink.value, Lyrics: els.fLyrics.value, ContextNotes: els.fNotes.value });
+      if(!r.ok) throw new Error(r.error||'Failed');
+      alert('Sent to review (row '+r.rowIndex+')'); clearForm();
+    }catch(e){ alert(e.message||e); }
+  });
 
-  // Review
+  // Review (admin)
   els.btnRefreshReview.addEventListener('click', loadReview);
   els.chkAll.addEventListener('change', ()=>{ const c=els.chkAll.checked; document.querySelectorAll('.rev-chk').forEach(x=> x.checked=c); });
-  async function loadReview(){ try{ const r=await apiGet({action:'listReview'}); const rows=r.rows||[]; els.revCount.textContent=`${rows.length} item(s)`; const tb=els.tblReview; tb.innerHTML=''; rows.forEach(row=>{ const tr=document.createElement('tr'); tr.innerHTML=`
+  async function loadReview(){ try{ const r=await apiGet({action:'listReview'}); const rows=r.rows||[]; els.revCount.textContent=`${rows.length} item(s)`; const tb=els.tblReview.querySelector('tbody'); tb.innerHTML=''; rows.forEach(row=>{ const tr=document.createElement('tr'); tr.innerHTML=`
           <td><input type="checkbox" class="rev-chk" data-idx="${row._RowIndex}"/></td>
           <td><div style="font-weight:600">${esc(row.Song)}</div><div class="muted">${esc(row.ContextNotes||'')}</div></td>
           <td>${esc(row.VersionLabel||'')}</td>
@@ -341,30 +647,303 @@
             <button class="btn" data-act="approve" data-idx="${row._RowIndex}">Approve</button>
             <button class="btn danger" data-act="reject" data-idx="${row._RowIndex}">Reject</button>
           </td>`; tb.appendChild(tr); }); if(!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="11" class="muted" style="text-align:center;padding:18px">No pending rows</td>`; tb.appendChild(tr); }
-      tb.querySelectorAll('button[data-act="approve"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'approveReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert('Approved → '+r.slug); loadReview(); }catch(e){ alert(e.message||e); } }));
-      tb.querySelectorAll('button[data-act="reject"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ await apiPost({ action:'rejectReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); loadReview(); }catch(e){ alert(e.message||e); } }));
+      tb.querySelectorAll('button[data-act="approve"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'approveReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); alert('Approved → '+r.slug); loadReview(); }catch(e){ alert(e.message||e); } }));
+      tb.querySelectorAll('button[data-act="reject"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'rejectReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); loadReview(); }catch(e){ alert(e.message||e); } }));
       byId('btnBulkApprove').onclick = async()=>{ const rows=Array.from(document.querySelectorAll('.rev-chk:checked')).map(x=> parseInt(x.dataset.idx,10)); if(!rows.length) return alert('Select at least one'); try{ const r=await apiPost({ action:'bulkApprove', rowIndices: rows, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert('Bulk approved: '+ r.results.filter(x=>x.ok).length +'/'+ r.results.length); loadReview(); }catch(e){ alert(e.message||e); } };
     }catch(e){ alert(e.message||e); } }
 
-  // Modal + Admin edit/delete
-  function openModal(row){ currentRow=row; editMode=false; els.mTitle.textContent=row.Song||''; els.mVersion.textContent=row.VersionLabel||''; els.mArtist.textContent=row.VersionArtist||''; els.mSlug.textContent=row.Slug||''; els.mLang.textContent=row.Language||''; els.mTheme.textContent=row.Theme||''; els.mKeys.textContent=[row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / '); els.mAudio.textContent=row.LinkAudio||''; els.mAudio.href=row.LinkAudio||'#'; els.mLyricsLink.textContent=row.LinkLyrics||''; els.mLyricsLink.href=row.LinkLyrics||'#'; els.mLyrics.textContent=row.Lyrics||''; els.mNotes.textContent=row.ContextNotes||'';
-    // Prefill edit inputs
+  // Catalog modal (admin edit/delete) — unchanged behaviour, now shared with the Sunday lyrics viewer
+  function openModal(row, opts){
+    opts = opts || {};
+    currentRow=row; editMode=false;
+    els.mTitle.textContent=row.Song||''; els.mVersion.textContent=row.VersionLabel||''; els.mArtist.textContent=row.VersionArtist||''; els.mSlug.textContent=row.Slug||''; els.mLang.textContent=row.Language||''; els.mTheme.textContent=row.Theme||''; els.mKeys.textContent=[row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / '); els.mAudio.textContent=row.LinkAudio||''; els.mAudio.href=row.LinkAudio||'#'; els.mLyricsLink.textContent=row.LinkLyrics||''; els.mLyricsLink.href=row.LinkLyrics||'#'; els.mLyrics.textContent=row.Lyrics||(row.Lyrics===''?'No lyrics saved yet.':''); els.mNotes.textContent=row.ContextNotes||'';
     els.eSong.value=row.Song||''; els.eVersionLabel.value=row.VersionLabel||''; els.eVersionArtist.value=row.VersionArtist||''; els.eArrangement.value=row.Arrangement||''; els.eLanguage.value=row.Language||''; els.eTheme.value=row.Theme||''; els.eKey.value=row.Key||''; els.eKeyM.value=row.TypicalKeyMale||''; els.eKeyF.value=row.TypicalKeyFemale||''; els.eAudio.value=row.LinkAudio||''; els.eLyricsLink.value=row.LinkLyrics||''; els.eLyrics.value=row.Lyrics||''; els.eNotes.value=row.ContextNotes||'';
-    const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim()); els.mEdit.style.display=adminReady?'':'none'; els.mDelete.style.display=adminReady?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; els.modal.classList.add('open'); }
-
+    const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim());
+    const showAdminBtns = adminReady && !opts.readOnly;
+    els.mEdit.style.display=showAdminBtns?'':'none'; els.mDelete.style.display=showAdminBtns?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; els.modal.classList.add('open');
+  }
+  async function openModalBySlug(slug){
+    try{ const r = await apiGet({action:'getSongBySlug', slug}); if(r.found) openModal(r.row); else alert('Song details not found (it may have been edited or removed).'); }
+    catch(e){ alert(e.message||e); }
+  }
   els.mEdit.addEventListener('click', ()=>{ if(!currentRow) return; editMode=true; els.mEdit.style.display='none'; els.mDelete.style.display='none'; els.mSave.style.display=''; els.mCancel.style.display=''; els.editFields.style.display=''; });
   els.mCancel.addEventListener('click', ()=>{ editMode=false; const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim()); els.mEdit.style.display=adminReady?'':'none'; els.mDelete.style.display=adminReady?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; });
-  els.mSave.addEventListener('click', async ()=>{ if(!currentRow) return; try{ const r=await apiPost({ action:'updateSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', Song: els.eSong.value, VersionLabel: els.eVersionLabel.value, VersionArtist: els.eVersionArtist.value, Arrangement: els.eArrangement.value, Language: els.eLanguage.value, Theme: els.eTheme.value, Key: els.eKey.value, TypicalKeyMale: els.eKeyM.value, TypicalKeyFemale: els.eKeyF.value, LinkAudio: els.eAudio.value, LinkLyrics: els.eLyricsLink.value, Lyrics: els.eLyrics.value, ContextNotes: els.eNotes.value, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert('Updated ✔'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
-  els.mDelete.addEventListener('click', async ()=>{ if(!currentRow) return; if(!confirm('Delete this song?')) return; const hard = confirm('Hard delete (no Archive)? OK = Hard, Cancel = Soft'); try{ const r=await apiPost({ action:'deleteSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', reason:'Removed via UI', hard, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert(r.hardDeleted? 'Deleted permanently':'Deleted (archived)'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
+  els.mSave.addEventListener('click', async ()=>{ if(!currentRow) return; try{ const r=await apiPost({ action:'updateSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', Song: els.eSong.value, VersionLabel: els.eVersionLabel.value, VersionArtist: els.eVersionArtist.value, Arrangement: els.eArrangement.value, Language: els.eLanguage.value, Theme: els.eTheme.value, Key: els.eKey.value, TypicalKeyMale: els.eKeyM.value, TypicalKeyFemale: els.eKeyF.value, LinkAudio: els.eAudio.value, LinkLyrics: els.eLyricsLink.value, Lyrics: els.eLyrics.value, ContextNotes: els.eNotes.value, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); alert('Updated ✔'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
+  els.mDelete.addEventListener('click', async ()=>{ if(!currentRow) return; if(!confirm('Delete this song?')) return; const hard = confirm('Hard delete (no Archive)? OK = Hard, Cancel = Soft'); try{ const r=await apiPost({ action:'deleteSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', reason:'Removed via UI', hard, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); alert(r.hardDeleted? 'Deleted permanently':'Deleted (archived)'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
   els.mClose.addEventListener('click', ()=> els.modal.classList.remove('open'));
   els.modal.addEventListener('click', (e)=>{ if(e.target===els.modal) els.modal.classList.remove('open'); });
 
-  // Helpers
-  function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-  function selectTab(name){ document.querySelector(`.tab[data-tab="${name}"]`).click(); }
+  // ================= THIS SUNDAY (public) =================
+  function renderBadges(container, changes){
+    if(!changes || !changes.length){ container.classList.add('hidden'); container.innerHTML=''; return; }
+    container.classList.remove('hidden');
+    const lines = changes.map(c=>{
+      const who = c.by ? `<strong>${esc(c.by)}</strong>: ` : '';
+      if(c.kind==='add') return who+'added '+esc(c.newValue);
+      if(c.kind==='remove') return who+'removed '+esc(c.newValue);
+      if(c.kind==='reorder') return who+'changed the order';
+      if(c.field==='Key') return who+'key '+esc(c.oldValue||'–')+' → '+esc(c.newValue||'–');
+      if(c.field==='Style') return who+'style '+esc(styleTxt(c.oldValue)||'–')+' → '+esc(styleTxt(c.newValue)||'–');
+      if(c.field==='ServicePart') return who+'moved to '+esc(c.newValue||'no section');
+      if(c.field==='FlowNote') return who+'updated the notes';
+      if(c.field==='Leader') return who+'now led by '+esc(c.newValue);
+      return who+esc(c.field)+' changed';
+    });
+    container.innerHTML = lines.map(l => `<div class="badge-line">${l}</div>`).join('');
+  }
+  function songRowHtml(item, opts){
+    opts = opts||{};
+    const removed = item.status==='Removed';
+    const tags = [];
+    if(item.key) tags.push(`<span class="tag key">${esc(item.key)}</span>`);
+    styleList(item.style).forEach(s => tags.push(`<span class="tag">${esc(s)}</span>`));
+    if(item.servicePart) tags.push(`<span class="tag">${esc(item.servicePart)}</span>`);
+    const lyricsBtn = (item.hasLyrics || item.linkLyrics) ? `<button class="btn small lyrics-btn" data-slug="${esc(item.slug)}">Lyrics</button>` : '';
+    return `<li class="${removed?'removed':''}">
+      <div class="ord">${item.order||''}</div>
+      <div class="main">
+        <div class="title">${esc(item.song)}${item.versionLabel?` <span class="muted" style="font-weight:400">— ${esc(item.versionLabel)}</span>`:''}</div>
+        <div class="meta">${leaderChipHtml(item.leader)}${item.language?' · '+esc(item.language):''}</div>
+        <div class="tagrow">${tags.join('')}${lyricsBtn}</div>
+        ${item.flowNote?`<div class="flow">${esc(item.flowNote)}</div>`:''}
+      </div>
+    </li>`;
+  }
+  function wireLyricsButtons(root){ root.querySelectorAll('.lyrics-btn').forEach(b => b.addEventListener('click', ()=> openModalBySlug(b.dataset.slug))); }
 
-  // Init
-  if (els.apiBase.value) { (async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await loadLookups(); }catch{ setOnline(false) } })(); }
+  function fillSundayPicker(services, currentId){
+    els.sunPicker.innerHTML = (services||[]).map(s => `<option value="${s.serviceId}">${fmtDate(s.date)}${s.theme?' — '+esc(s.theme):''}${s.status==='Done'?' ✓':''}</option>`).join('');
+    if(currentId) els.sunPicker.value = currentId;
+  }
+  function renderSunday(r){
+    sunData = r;
+    fillSundayPicker(r.services, r.service ? r.service.serviceId : '');
+    if(!r.service){
+      els.sunTitle.textContent = 'Nothing planned yet';
+      els.sunSub.textContent = 'Next Sunday is ' + fmtDate(r.suggestedDate);
+      els.sunList.innerHTML = `<li><div class="empty" style="width:100%">No setlist yet for the coming Sunday.</div></li>`;
+      els.sunBadges.classList.add('hidden');
+      return;
+    }
+    els.sunTitle.textContent = fmtDate(r.service.date);
+    els.sunSub.textContent = (r.service.theme? r.service.theme+' · ' : '') + (r.service.status==='Done' ? 'Service completed' : 'Updated '+ago(r.builtAt));
+    renderBadges(els.sunBadges, r.changes);
+    if(!r.items.length){
+      els.sunList.innerHTML = `<li><div class="empty" style="width:100%">Nothing posted yet for this Sunday.</div></li>`;
+    } else {
+      els.sunList.innerHTML = r.items.map(i => songRowHtml(i)).join('');
+      wireLyricsButtons(els.sunList);
+    }
+  }
+  async function loadSundayPublic(serviceId, ver, day){
+    try{
+      const params = {action:'getSunday'};
+      if(serviceId) params.serviceId = serviceId;
+      if(ver!=null){ params.ver = ver; params.day = day; }
+      const r = await apiGet(params);
+      if(r.unchanged) return;
+      renderSunday(r);
+    }catch(e){ /* stay quiet on background polls */ if(!ver) console.warn(e); }
+  }
+  els.sunPicker.addEventListener('change', ()=> loadSundayPublic(els.sunPicker.value));
+  els.btnSunRefresh.addEventListener('click', ()=> loadSundayPublic(sunData && sunData.service ? sunData.service.serviceId : ''));
+  function startPolling(){
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(()=>{
+      const activeTab = document.querySelector('.tab.active').dataset.tab;
+      if(activeTab!=='sunday' || !sunData) return;
+      loadSundayPublic(sunData.service ? sunData.service.serviceId : '', sunData.ver, sunData.today);
+    }, 30000);
+  }
+
+  // ================= PRACTICE (leader) =================
+  function suggestedDateInput(){
+    if(!sunData || !sunData.suggestedDate) return;
+    if(!els.pDate.value) els.pDate.value = sunData.suggestedDate;
+  }
+  async function loadPractice(){
+    if(!session && !(els.adminUser.value.trim() && els.adminPin.value.trim())) { renderGates(); return; }
+    try{
+      const r = await apiPost({ action:'getSundayLeader', ...authFields(), serviceId: sunData && sunData.service ? sunData.service.serviceId : '' });
+      if(!r.ok) throw new Error(r.error);
+      sunData = r;
+      suggestedDateInput();
+      if(r.service){ els.pDate.value = r.service.date; els.pTheme.value = r.service.theme||''; els.pStatusPill.textContent = r.service.status; els.pStatusPill.classList.toggle('done', r.service.status==='Done'); }
+      else { els.pStatusPill.textContent=''; }
+      renderPracticeList(r);
+    }catch(e){ console.warn(e); }
+  }
+  function updatePostStatus(){
+    if(!sunData) return;
+    const p = (sunData.posts||[]).find(x => x.leader.toLowerCase() === els.postLeader.value.toLowerCase());
+    els.postStatus.textContent = p ? ('Posted ' + ago(p.postedAt)) : 'Not posted yet';
+  }
+  els.postLeader.addEventListener('change', updatePostStatus);
+  function renderPracticeList(r){
+    els.pCount.textContent = (r.items||[]).filter(i=>i.status!=='Removed').length + ' song(s)';
+    renderBadges(els.pBadges, r.changes);
+    updatePostStatus();
+    if(!r.service){ els.pList.innerHTML = `<div class="empty">Load or create a Sunday above to start adding songs.</div>`; return; }
+    const active = (r.items||[]).filter(i => i.status!=='Removed');
+    if(!active.length){ els.pList.innerHTML = `<div class="empty">No songs yet — add one above.</div>`; return; }
+    els.pList.innerHTML = active.map((item, idx) => practiceItemHtml(item, idx, active.length)).join('');
+    wireLyricsButtons(els.pList);
+    els.pList.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', ()=> removeItem(b.dataset.remove)));
+    els.pList.querySelectorAll('[data-up]').forEach(b => b.addEventListener('click', ()=> moveItem(b.dataset.up, -1)));
+    els.pList.querySelectorAll('[data-down]').forEach(b => b.addEventListener('click', ()=> moveItem(b.dataset.down, 1)));
+    els.pList.querySelectorAll('.p-key').forEach(inp => inp.addEventListener('change', ()=> saveItemField(inp.dataset.item, inp.dataset.rev, {key: inp.value})));
+    els.pList.querySelectorAll('.p-part').forEach(sel => sel.addEventListener('change', ()=> saveItemField(sel.dataset.item, sel.dataset.rev, {servicePart: sel.value})));
+    els.pList.querySelectorAll('.p-note').forEach(inp => inp.addEventListener('change', ()=> saveItemField(inp.dataset.item, inp.dataset.rev, {flowNote: inp.value})));
+    els.pList.querySelectorAll('.p-style').forEach(chip => chip.addEventListener('click', ()=>{
+      const wrap = chip.closest('[data-styles-for]'); const itemId = wrap.dataset.stylesFor; const rev = wrap.dataset.rev;
+      let cur = styleList(wrap.dataset.current);
+      const s = chip.dataset.style; const i = cur.indexOf(s);
+      if(i>=0) cur.splice(i,1); else { if(cur.length>=2) cur.shift(); cur.push(s); }
+      wrap.dataset.current = cur.join(STYLE_SEP);
+      wrap.querySelectorAll('.p-style').forEach(c => c.classList.toggle('on', cur.includes(c.dataset.style)));
+      saveItemField(itemId, rev, {style: cur.join(STYLE_SEP)}, wrap);
+    }));
+  }
+  function practiceItemHtml(item, idx, total){
+    const posted = item.posted ? `<span class="tag" style="background:#eef7ee;border-color:#bfe3cc;color:var(--ok)">Posted</span>` : `<span class="tag">Draft</span>`;
+    const lyricsBtn = (item.hasLyrics || item.linkLyrics) ? `<button class="btn small lyrics-btn" data-slug="${esc(item.slug)}">Lyrics</button>` : '';
+    const styleChips = (lookups.styles||[]).map(s => `<span class="style-check p-style ${styleList(item.style).includes(s)?'on':''}" data-style="${esc(s)}">${esc(s)}</span>`).join('');
+    const partOptions = [''].concat(lookups.serviceParts||[]).map(p => `<option value="${esc(p)}" ${p===item.servicePart?'selected':''}>${p||'(no section)'}</option>`).join('');
+    return `<div class="practice-item">
+      <div>${leaderChipHtml(item.leader)}<div class="row" style="gap:4px;margin-top:6px">
+          <button class="btn small" data-up="${item.itemId}" ${idx===0?'disabled':''}>↑</button>
+          <button class="btn small" data-down="${item.itemId}" ${idx===total-1?'disabled':''}>↓</button>
+        </div></div>
+      <div>
+        <div class="title" style="font-weight:650">${esc(item.song)}${item.versionLabel?` <span class="muted" style="font-weight:400">— ${esc(item.versionLabel)}</span>`:''} ${posted} ${lyricsBtn}</div>
+        <div class="fields" style="margin-top:6px">
+          <input class="p-key" data-item="${item.itemId}" data-rev="${item.rev}" value="${esc(item.key)}" placeholder="Key" />
+          <select class="p-part" data-item="${item.itemId}" data-rev="${item.rev}">${partOptions}</select>
+          <input class="p-note" data-item="${item.itemId}" data-rev="${item.rev}" value="${esc(item.flowNote)}" placeholder="Flow note" style="grid-column:3/5" />
+        </div>
+        <div class="style-picker" data-styles-for="${item.itemId}" data-rev="${item.rev}" data-current="${esc(item.style)}" style="margin-top:6px">${styleChips}</div>
+        <div class="cap">Updated ${ago(item.updatedAt)} by ${esc(item.updatedBy)}</div>
+        <div class="conflict hidden" data-conflict-for="${item.itemId}"></div>
+      </div>
+      <div><button class="btn danger small" data-remove="${item.itemId}">Remove</button></div>
+    </div>`;
+  }
+  async function saveItemField(itemId, rev, patch, styleWrapEl){
+    try{
+      const r = await apiPost({ action:'updateItem', ...authFields(), itemId, expectedRev: rev, ...patch });
+      if(r.conflict){
+        const box = els.pList.querySelector(`[data-conflict-for="${itemId}"]`);
+        if(box){ box.classList.remove('hidden'); box.textContent = 'Someone else changed this song first — refreshing…'; }
+        setTimeout(loadPractice, 600);
+        return;
+      }
+      if(!r.ok) throw new Error(r.error);
+      if(styleWrapEl) styleWrapEl.dataset.rev = r.item.rev;
+      else { const owner = els.pList.querySelector(`[data-item="${itemId}"]`); }
+      loadPractice();
+    }catch(e){ alert(e.message||e); loadPractice(); }
+  }
+  async function removeItem(itemId){
+    if(!confirm('Remove this song from the list?')) return;
+    try{ const r = await apiPost({ action:'removeItem', ...authFields(), itemId }); if(!r.ok) throw new Error(r.error); loadPractice(); }
+    catch(e){ alert(e.message||e); }
+  }
+  async function moveItem(itemId, dir){
+    const active = (sunData.items||[]).filter(i=>i.status!=='Removed');
+    const ids = active.map(i=>i.itemId);
+    const i = ids.indexOf(itemId); const j = i+dir;
+    if(i<0||j<0||j>=ids.length) return;
+    [ids[i],ids[j]] = [ids[j],ids[i]];
+    try{ const r = await apiPost({ action:'reorderItems', ...authFields(), serviceId: sunData.service.serviceId, order: ids }); if(!r.ok) throw new Error(r.error); loadPractice(); }
+    catch(e){ alert(e.message||e); }
+  }
+
+  els.btnLoadSunday.addEventListener('click', async ()=>{
+    if(!els.pDate.value) return alert('Pick a date');
+    try{
+      const r = await apiPost({ action:'createService', ...authFields(), date: els.pDate.value, theme: els.pTheme.value });
+      if(!r.ok) throw new Error(r.error);
+      await loadPractice();
+    }catch(e){ alert(e.message||e); }
+  });
+  els.btnMarkDone.addEventListener('click', async ()=>{
+    if(!sunData || !sunData.service) return;
+    if(!confirm('Mark this Sunday as Done? It will stop showing change badges and can no longer be edited.')) return;
+    try{ const r = await apiPost({ action:'updateService', ...authFields(), serviceId: sunData.service.serviceId, status:'Done' }); if(!r.ok) throw new Error(r.error); await loadPractice(); }
+    catch(e){ alert(e.message||e); }
+  });
+  els.btnAddItem.addEventListener('click', async ()=>{
+    if(!sunData || !sunData.service) return alert('Load or create a Sunday first');
+    const song = findSongByTypedLabel(els.aSongSearch.value);
+    if(!song) return alert('Pick a song from the suggestions as you type (search the Catalog tab first if you can\'t find it)');
+    try{
+      const r = await apiPost({ action:'addItem', ...authFields(), serviceId: sunData.service.serviceId, songId: song.SongID, itemLeader: els.aLeader.value, servicePart: els.aServicePart.value, key: els.aKey.value, style: aStyles.join(STYLE_SEP), flowNote: els.aFlowNote.value });
+      if(!r.ok) throw new Error(r.error);
+      els.aSongSearch.value=''; els.aKey.value=''; els.aFlowNote.value=''; aStyles=[]; renderStylePicker();
+      await loadPractice();
+    }catch(e){ alert(e.message||e); }
+  });
+  els.btnPost.addEventListener('click', async ()=>{
+    if(!sunData || !sunData.service) return;
+    try{
+      const r = await apiPost({ action:'postList', ...authFields(), serviceId: sunData.service.serviceId, itemLeader: els.postLeader.value });
+      if(!r.ok) throw new Error(r.error);
+      alert(r.alreadyPosted? (els.postLeader.value+"'s list was already posted") : 'Posted. '+(r.notify && !r.notify.ok ? '(notification failed to send: '+r.notify.error+')' : 'Notification sent.'));
+      await loadPractice();
+    }catch(e){ alert(e.message||e); }
+  });
+
+  // ================= NOTIFICATIONS (OneSignal) =================
+  let oneSignalReady = false;
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async function(OneSignal){
+    try{
+      await OneSignal.init({
+        appId: ONESIGNAL_APP_ID,
+        serviceWorkerPath: 'push/onesignal/OneSignalSDKWorker.js',
+        serviceWorkerParam: { scope: '/push/onesignal/' }
+      });
+      oneSignalReady = true;
+      refreshNotifyBanner();
+      OneSignal.User.PushSubscription.addEventListener('change', refreshNotifyBanner);
+    }catch(e){ els.notifyStatus.textContent = 'Notifications unavailable in this browser.'; }
+  });
+  function refreshNotifyBanner(){
+    if(!window.OneSignal || !oneSignalReady){ els.notifyStatus.textContent = 'Loading…'; return; }
+    const supported = OneSignal.Notifications.isPushSupported();
+    if(!supported){
+      els.notifyBanner.className = 'banner off';
+      els.notifyStatus.textContent = "This browser can't receive push notifications. On iPhone, add this site to your Home Screen first (below), then open it from there.";
+      els.btnNotify.disabled = true; els.btnNotify.textContent = 'Not available';
+      return;
+    }
+    const optedIn = OneSignal.User.PushSubscription.optedIn;
+    const perm = OneSignal.Notifications.permission;
+    if(optedIn){
+      els.notifyBanner.className = 'banner on';
+      els.notifyStatus.textContent = 'Notifications are on for this browser.';
+      els.btnNotify.textContent = 'On ✓'; els.btnNotify.disabled = true;
+    } else if(perm===false){
+      els.notifyBanner.className = 'banner blocked';
+      els.notifyStatus.textContent = 'Notifications are blocked for this site. Turn them on in your browser settings, then reload.';
+      els.btnNotify.textContent = 'Blocked'; els.btnNotify.disabled = true;
+    } else {
+      els.notifyBanner.className = 'banner off';
+      els.notifyStatus.textContent = "You won't be notified until you turn this on.";
+      els.btnNotify.disabled = false; els.btnNotify.textContent = 'Turn on notifications';
+    }
+  }
+  els.btnNotify.addEventListener('click', async ()=>{
+    if(!window.OneSignal || !oneSignalReady) return;
+    try{
+      await OneSignal.Notifications.requestPermission();
+      refreshNotifyBanner();
+    }catch(e){ alert('Could not request permission: '+(e.message||e)); }
+  });
+
+  // ================= INIT =================
+  loadSession();
+  if (els.apiBase.value) { (async()=>{ try{ await apiGet({action:'health'}); setOnline(true); await bootstrap(); await loadSundayPublic(); startPolling(); }catch{ setOnline(false) } })(); }
 })();
 </script>
 </body>
