@@ -906,7 +906,11 @@
       oneSignalReady = true;
       refreshNotifyBanner();
       OneSignal.User.PushSubscription.addEventListener('change', refreshNotifyBanner);
-    }catch(e){ els.notifyStatus.textContent = 'Notifications unavailable in this browser.'; }
+    }catch(e){
+      const msg = (e && e.message) ? e.message : String(e && e.toString ? e.toString() : e);
+      els.notifyStatus.textContent = 'Notifications could not start: ' + msg;
+      console.error('OneSignal init failed:', e);
+    }
   });
   function refreshNotifyBanner(){
     if(!window.OneSignal || !oneSignalReady){ els.notifyStatus.textContent = 'Loading…'; return; }
