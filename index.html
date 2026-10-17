@@ -292,6 +292,19 @@
       </div>
       <div id="addBody" class="card hidden">
         <div class="head">Add Song → Review Queue</div>
+        <div style="padding:12px;border-bottom:1px solid var(--line)">
+          <div class="muted" style="font-size:12px;margin-bottom:4px">Paste a YouTube, Spotify, SoundCloud, or lyrics-site link to fill in what it can</div>
+          <div class="row" style="gap:8px">
+            <input id="fLinkInput" class="input" placeholder="https://..." />
+            <button class="btn" id="btnFetchLink">Fetch details</button>
+          </div>
+          <div id="fLinkResult" class="hidden" style="margin-top:8px;font-size:12.5px">
+            <span class="muted">Found on <span id="fLinkSource"></span>: "<span id="fLinkRaw"></span>"</span>
+            <button class="btn small" id="btnSwapSongArtist" style="margin-left:8px">⇄ Swap song/artist</button>
+            <div id="fLinkNote" class="muted hidden" style="margin-top:2px"></div>
+          </div>
+          <div id="fLinkError" class="hidden" style="margin-top:8px;font-size:12.5px;color:var(--danger)"></div>
+        </div>
         <div class="grid g-3" style="padding:12px">
           <input id="fSong" class="input" placeholder="Song *" />
           <input id="fVersionLabel" class="input" placeholder="Version Label (e.g., Hillsong Live)" />
@@ -616,9 +629,37 @@
            Object.values(songIndex).find(r => r.Song.toLowerCase() === t.toLowerCase());
   }
 
-  // Add song
+  // Add song — paste-a-link auto-fill
+  els.btnFetchLink.addEventListener('click', async ()=>{
+    const url = els.fLinkInput.value.trim();
+    if(!url) return;
+    let auth; try{ auth = requireAuthOrThrow(); }catch(e){ return alert(e.message); }
+    els.fLinkResult.classList.add('hidden'); els.fLinkError.classList.add('hidden');
+    els.btnFetchLink.disabled = true; els.btnFetchLink.textContent = 'Looking…';
+    try{
+      const r = await apiPost({ action:'lookupLink', ...auth, url });
+      if(!r.ok) throw new Error(r.error || "Couldn't read that link");
+      if(r.song) els.fSong.value = r.song;
+      if(r.versionArtist) els.fVersionArtist.value = r.versionArtist;
+      if(r.linkType==='audio') els.fAudio.value = url; else els.fLyricsLink.value = url;
+      els.fLinkSource.textContent = r.source; els.fLinkRaw.textContent = r.raw || '';
+      els.fLinkResult.classList.remove('hidden');
+      els.btnSwapSongArtist.classList.toggle('hidden', !r.swappable);
+      els.fLinkNote.classList.toggle('hidden', !r.note);
+      if(r.note) els.fLinkNote.textContent = r.note;
+    }catch(e){
+      els.fLinkError.textContent = e.message || String(e);
+      els.fLinkError.classList.remove('hidden');
+    }finally{
+      els.btnFetchLink.disabled = false; els.btnFetchLink.textContent = 'Fetch details';
+    }
+  });
+  els.btnSwapSongArtist.addEventListener('click', ()=>{
+    const a = els.fSong.value; els.fSong.value = els.fVersionArtist.value; els.fVersionArtist.value = a;
+  });
+
   byId('btnClear').addEventListener('click', clearForm);
-  function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes'].forEach(id=> els[id].value=''); }
+  function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes','fLinkInput'].forEach(id=> els[id].value=''); els.fLinkResult.classList.add('hidden'); els.fLinkError.classList.add('hidden'); }
   byId('btnAdd').addEventListener('click', async()=>{
     if(!els.fSong.value.trim()) return alert('Song is required');
     let auth; try{ auth = requireAuthOrThrow(); }catch(e){ return alert(e.message); }
