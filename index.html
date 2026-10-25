@@ -97,6 +97,30 @@
     .colswatches{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
     .swatch{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer}
     .swatch.sel{border-color:#111}
+
+    /* floating pop-up windows for links */
+    .float-win{position:fixed;z-index:60;background:#fff;border:1px solid #cfd6e2;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden;min-width:220px;min-height:90px}
+    .fw-head{display:flex;align-items:center;gap:4px;padding:5px 6px 5px 10px;background:#f1f4f9;border-bottom:1px solid var(--line);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+    .fw-title{flex:1;min-width:0;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .fw-btn{border:none;background:transparent;font:inherit;font-size:15px;line-height:1;padding:5px 8px;border-radius:6px;cursor:pointer;color:#333;text-decoration:none;display:inline-block}
+    .fw-btn:hover{background:#dfe5ee}
+    .fw-body{flex:1;min-height:0;position:relative;background:#fff;display:flex;flex-direction:column}
+    .fw-body iframe{flex:1;width:100%;min-height:0;border:0;display:block;background:#fff}
+    .fw-note{font-size:11.5px;color:#555;padding:4px 10px;background:#fffbea;border-top:1px solid #f0e0a0}
+
+    /* lyrics-from-audio panel */
+    .tx-panel{border:1px dashed #b9c4d8;border-radius:10px;padding:8px 10px;background:#fbfcff}
+    .tx-panel>summary{cursor:pointer;font-weight:600;color:#33415c}
+    .tx-panel .tx-body{margin-top:8px;display:grid;gap:8px}
+    .tx-panel .tx-warn{font-size:12.5px;background:#fff8e1;border:1px solid #f0e0a0;border-radius:8px;padding:5px 9px;margin-bottom:5px}
+    .tx-panel .tx-info{font-size:12.5px;background:#eef4ff;border:1px solid #cfe0fb;border-radius:8px;padding:5px 9px;margin-bottom:5px}
+    .tx-panel .tx-err{font-size:12.5px;color:var(--danger)}
+    .tx-panel input[type=file]{padding:6px}
+    .fw-resize{position:absolute;right:0;bottom:0;width:24px;height:24px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 52%,#9aa3b2 52%,#9aa3b2 60%,transparent 60%,transparent 72%,#9aa3b2 72%,#9aa3b2 80%,transparent 80%)}
+    .float-win.min{height:auto!important;min-height:0}
+    .float-win.min .fw-body,.float-win.min .fw-resize{display:none}
+    body.fw-dragging .fw-body iframe{pointer-events:none}
+    body.fw-dragging{user-select:none;-webkit-user-select:none}
   </style>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
@@ -319,6 +343,7 @@
           <input id="fLyricsLink" class="input" placeholder="Lyrics link" />
           <textarea id="fLyrics" class="input" placeholder="Lyrics (paste or summary)" rows="3"></textarea>
           <textarea id="fNotes" class="input" placeholder="Context notes (tempo, arrangement differences, scripture, etc.)" rows="3"></textarea>
+          <div id="txAdd" style="grid-column:1/-1"></div>
           <div class="row-end" style="grid-column:1/-1">
             <button class="btn" id="btnClear">Clear</button>
             <button class="btn primary" id="btnAdd">Send to Review</button>
@@ -401,11 +426,11 @@
         </div>
         <div style="grid-column:1/-1">
           <div class="muted">Audio</div>
-          <div><a id="mAudio" href="#" target="_blank"></a></div>
+          <div><a id="mAudio" href="#" target="_blank" data-float="audio"></a></div>
         </div>
         <div style="grid-column:1/-1">
           <div class="muted">Lyrics Link</div>
-          <div><a id="mLyricsLink" href="#" target="_blank"></a></div>
+          <div><a id="mLyricsLink" href="#" target="_blank" data-float="lyrics"></a></div>
         </div>
         <div style="grid-column:1/-1">
           <div class="muted">Lyrics</div>
@@ -431,6 +456,7 @@
           <input id="eLyricsLink" class="input" placeholder="Lyrics Link" />
           <textarea id="eLyrics" class="input" placeholder="Lyrics" rows="4"></textarea>
           <textarea id="eNotes" class="input" placeholder="Context Notes" rows="3"></textarea>
+          <div id="txEdit" style="grid-column:1/-1"></div>
         </div>
       </div>
     </div>
@@ -455,7 +481,7 @@
   // ---------- tiny helpers ----------
   function byId(id){ return document.getElementById(id) }
   function qs(sel){ return document.querySelector(sel) }
-  function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function selectTab(name){ const b=document.querySelector(`.tab[data-tab="${name}"]`); if(b) b.click(); }
   const LS = { get(k,d=''){ try{return JSON.parse(localStorage.getItem(k)) ?? d}catch{return d} }, set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch{} }, del(k){ try{localStorage.removeItem(k)}catch{} } };
 
@@ -504,6 +530,272 @@
 
   function setOnline(ok){ els.healthChip.textContent = ok ? 'Online' : 'Offline'; els.healthChip.style.background = ok? '#e8f0fe':'#f3f4f6'; els.healthChip.style.borderColor = ok? '#90c2ff':'#e6e6e6'; els.healthChip.style.color = ok? '#0b57d0':'#333'; }
   function fillSelect(sel,arr){ sel.innerHTML=''; arr.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i===0?'':v; o.textContent=v||'--'; sel.appendChild(o); }); }
+
+  // ================= FLOATING LINK WINDOWS =================
+  // ---- FLOAT PURE HELPERS START ----
+  function safeUrl(u){ try{ const x=new URL(String(u||'').trim()); return (x.protocol==='http:'||x.protocol==='https:') ? x.href : ''; }catch(e){ return ''; } }
+  function ytStart(t){
+    if(!t) return 0;
+    if(/^\d+$/.test(t)) return parseInt(t,10);
+    const m = String(t).match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+    if(!m) return 0;
+    return (+m[1]||0)*3600 + (+m[2]||0)*60 + (+m[3]||0);
+  }
+  // Turns a normal link into the address a player can be embedded from. Anything we don't recognise is
+  // shown as a plain page (many sites refuse to be embedded; the window then offers "open in a new tab").
+  function embedSpec(url){
+    let u; try{ u = new URL(url); }catch(e){ return { kind:'page', src:url, w:460, h:480 }; }
+    const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./,'');
+    const idOk = id => /^[A-Za-z0-9_-]{6,20}$/.test(id||'');
+    function yt(id){
+      const p = new URLSearchParams({ rel:'0', playsinline:'1' });
+      const st = ytStart(u.searchParams.get('t') || u.searchParams.get('start'));
+      if(st) p.set('start', String(st));
+      return { kind:'video', src:'https://www.youtube.com/embed/'+encodeURIComponent(id)+'?'+p.toString(), w:420, ratio:16/9 };
+    }
+    if(host==='youtu.be'){ const id = u.pathname.split('/')[1]; if(idOk(id)) return yt(id); }
+    if(host==='youtube.com'){
+      const v = u.searchParams.get('v');
+      if(u.pathname==='/watch' && idOk(v)) return yt(v);
+      const m = u.pathname.match(/^\/(?:shorts|embed|live|v)\/([A-Za-z0-9_-]{6,20})/);
+      if(m) return yt(m[1]);
+    }
+    if(host==='open.spotify.com'){
+      const m = u.pathname.match(/\/(track|album|playlist|episode|show|artist)\/([A-Za-z0-9]+)/);
+      if(m) return { kind:'audio', src:'https://open.spotify.com/embed/'+m[1]+'/'+m[2], w:380, h:(m[1]==='track'||m[1]==='episode') ? 152 : 352 };
+    }
+    if(host==='soundcloud.com'){
+      return { kind:'audio', src:'https://w.soundcloud.com/player/?url='+encodeURIComponent(url)+'&auto_play=false&show_comments=false', w:400, h:/\/sets\//.test(u.pathname) ? 300 : 166 };
+    }
+    return { kind:'page', src:url, w:460, h:480 };
+  }
+  // Where a new window first appears (bottom-right on a computer, full-width near the bottom on a phone).
+  function floatLayout(vw, vh, spec, index){
+    const HEAD = 34, NOTE = spec.kind==='page' ? 26 : 0;
+    const narrow = vw <= 560;
+    const width = narrow ? Math.max(240, vw - 16) : Math.min(spec.w, vw - 24);
+    const bodyH = spec.h || Math.round(width / (spec.ratio || 16/9));
+    const height = Math.min(bodyH + HEAD + NOTE, vh - 16);
+    const off = index * 28;
+    const left = narrow ? 8 : Math.max(8, vw - width - 20 - off);
+    const top = Math.max(8, vh - height - 20 - (narrow ? index*44 : off));
+    return { left, top, width, height };
+  }
+  // Keeps part of the title bar you can actually grab on screen: the left side holds the title, the right
+  // ~100px holds the buttons, so at least 170px must stay visible on the left edge (80px on the right edge).
+  function clampPos(x, y, w, vw, vh){
+    return { x: Math.min(Math.max(x, 170 - w), vw - 80), y: Math.min(Math.max(y, 0), vh - 36) };
+  }
+  // ---- FLOAT PURE HELPERS END ----
+
+  const floats = []; let fwZ = 60; const MAX_FLOATS = 3;
+  function bringFront(f){ f.el.style.zIndex = String(++fwZ); }
+  function closeFloat(f){ const i = floats.indexOf(f); if(i>=0) floats.splice(i,1); f.el.remove(); }
+  function openFloat(opts){
+    const url = safeUrl(opts.url);
+    if(!url){ alert("That link doesn't look like a web address."); return; }
+    const found = floats.find(f => f.url===url);
+    if(found){ found.el.classList.remove('min'); bringFront(found); return; }
+    while(floats.length >= MAX_FLOATS) closeFloat(floats[0]);
+    const spec = embedSpec(url);
+    const lay = floatLayout(window.innerWidth, window.innerHeight, spec, floats.length);
+    const el = document.createElement('div');
+    el.className = 'float-win';
+    el.style.cssText = `left:${lay.left}px;top:${lay.top}px;width:${lay.width}px;height:${lay.height}px;z-index:${++fwZ}`;
+    const sandbox = spec.kind==='page' ? ' sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"' : '';
+    const note = spec.kind==='page' ? `<div class="fw-note">Blank or an error? This site may not allow embedding — use ↗ to open it normally.</div>` : '';
+    el.innerHTML = `<div class="fw-head"><span class="fw-title">${esc(opts.title||url)}</span><a class="fw-btn" href="${esc(url)}" target="_blank" rel="noopener" title="Open in a new tab">↗</a><button class="fw-btn fw-min" title="Minimize">–</button><button class="fw-btn fw-close" title="Close">✕</button></div><div class="fw-body"><iframe src="${esc(spec.src)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"${sandbox}></iframe>${note}</div><div class="fw-resize"></div>`;
+    document.body.appendChild(el);
+    const f = { el, url };
+    floats.push(f);
+    el.addEventListener('pointerdown', ()=> bringFront(f), true);
+    el.querySelector('.fw-close').addEventListener('click', ()=> closeFloat(f));
+    el.querySelector('.fw-min').addEventListener('click', ()=> el.classList.toggle('min'));
+    dragify(f, el.querySelector('.fw-head'));
+    resizify(f, el.querySelector('.fw-resize'));
+  }
+  function dragify(f, head){
+    head.addEventListener('pointerdown', e=>{
+      if(e.target.closest('.fw-btn')) return;
+      if(e.pointerType==='mouse' && e.button!==0) return;
+      const sx = e.clientX, sy = e.clientY, ox = f.el.offsetLeft, oy = f.el.offsetTop;
+      head.setPointerCapture(e.pointerId);
+      document.body.classList.add('fw-dragging'); head.style.cursor = 'grabbing';
+      const move = ev => {
+        const p = clampPos(ox + ev.clientX - sx, oy + ev.clientY - sy, f.el.offsetWidth, window.innerWidth, window.innerHeight);
+        f.el.style.left = p.x + 'px'; f.el.style.top = p.y + 'px';
+      };
+      const up = ev => {
+        head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up); head.removeEventListener('pointercancel', up);
+        document.body.classList.remove('fw-dragging'); head.style.cursor = '';
+        try{ head.releasePointerCapture(ev.pointerId); }catch(_){}
+      };
+      head.addEventListener('pointermove', move); head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
+      e.preventDefault();
+    });
+  }
+  function resizify(f, handle){
+    handle.addEventListener('pointerdown', e=>{
+      const sx = e.clientX, sy = e.clientY, ow = f.el.offsetWidth, oh = f.el.offsetHeight;
+      handle.setPointerCapture(e.pointerId); document.body.classList.add('fw-dragging');
+      const move = ev => {
+        const maxW = window.innerWidth - f.el.offsetLeft - 4, maxH = window.innerHeight - f.el.offsetTop - 4;
+        f.el.style.width = Math.max(220, Math.min(maxW, ow + ev.clientX - sx)) + 'px';
+        f.el.style.height = Math.max(110, Math.min(maxH, oh + ev.clientY - sy)) + 'px';
+      };
+      const up = ev => {
+        handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); handle.removeEventListener('pointercancel', up);
+        document.body.classList.remove('fw-dragging');
+        try{ handle.releasePointerCapture(ev.pointerId); }catch(_){}
+      };
+      handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', up);
+      e.preventDefault(); e.stopPropagation();
+    });
+  }
+  window.addEventListener('resize', ()=> floats.forEach(f=>{
+    const p = clampPos(f.el.offsetLeft, f.el.offsetTop, f.el.offsetWidth, window.innerWidth, window.innerHeight);
+    f.el.style.left = p.x + 'px'; f.el.style.top = p.y + 'px';
+  }));
+  // Any link marked data-float opens in a window; Ctrl/Cmd/Shift-click or middle-click still opens a normal tab.
+  document.addEventListener('click', e=>{
+    const a = e.target.closest ? e.target.closest('a[data-float]') : null;
+    if(!a) return;
+    if(e.button!==0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const url = safeUrl(a.getAttribute('href'));
+    if(url) openFloat({ url, title: a.dataset.title || a.textContent });
+  });
+
+  // "▶ Audio" button on setlist rows. Older backends don't send linkAudio, so fall back to looking it up on click.
+  function audioBtnHtml(item){
+    const known = typeof item.linkAudio === 'string';
+    if(known && !safeUrl(item.linkAudio)) return '';
+    return `<button class="btn small audio-btn" data-slug="${esc(item.slug)}" data-title="${esc(item.song)}" data-url="${esc(known ? safeUrl(item.linkAudio) : '')}">▶ Audio</button>`;
+  }
+  function wireAudioButtons(root){
+    root.querySelectorAll('.audio-btn').forEach(b => b.addEventListener('click', async ()=>{
+      let url = b.dataset.url;
+      if(!url){
+        try{
+          const r = await apiGet({ action:'getSongBySlug', slug:b.dataset.slug });
+          url = r.found ? safeUrl(r.row.LinkAudio) : '';
+        }catch(e){ return alert(e.message||e); }
+        if(!url) return alert('No audio link saved for this song yet.');
+      }
+      openFloat({ url, title: (b.dataset.title||'Audio') + ' — audio' });
+    }));
+  }
+
+  // ================= LYRICS FROM AUDIO (draft) =================
+  const TX_MAX_UPLOAD = 12 * 1024 * 1024;                       // bigger recordings: use the Google Drive link instead
+  const TX_UNSUPPORTED_UI = ['igbo','zulu','kinyarwanda','kirundi'];   // keep in step with TX_UNSUPPORTED in the backend
+  const TX_STREAMING = /(^|\.)(youtube\.com|youtu\.be|spotify\.com|spotify\.link|soundcloud\.com|music\.apple\.com|deezer\.com|tidal\.com)$/i;
+  let langList = [];
+  const txPanels = [];
+  function txHostOf(u){ try{ return new URL(u).hostname; }catch(e){ return ''; } }
+  function txIsDrive(u){ return /(^|\.)(drive|docs)\.google\.com$/i.test(txHostOf(u)); }
+  function txLooksUsable(u){ return txIsDrive(u) || /\.(mp3|m4a|wav|ogg|webm|flac|mp4)(\?|#|$)/i.test(String(u||'')); }
+  function fileToBase64(file){
+    return new Promise((res, rej)=>{ const fr = new FileReader(); fr.onload = ()=> res(String(fr.result).split(',')[1] || ''); fr.onerror = ()=> rej(new Error("Couldn't read that file.")); fr.readAsDataURL(file); });
+  }
+  // One attempt only (no automatic retry — a retry could pay for the same song twice). Sent as plain text so the
+  // browser needs no permission check that Apps Script can't answer.
+  async function apiPostOnce(body){
+    const base = els.apiBase.value.trim();
+    if(!/^https?:\/\//.test(base)) throw new Error('Set API URL');
+    const r = await fetch(base, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, redirect:'follow', body: JSON.stringify(body) });
+    if(!r.ok) throw new Error('The server answered '+r.status);
+    return r.json();
+  }
+  function fillTxLangs(){
+    txPanels.forEach(p=>{
+      const sel = p.q('.tx-lang'); const keep = sel.value;
+      sel.innerHTML = '<option value="__form__">Same as the Language field above</option><option value="">Auto-detect</option>' +
+        langList.map(l => `<option value="${esc(l)}">${esc(l)}</option>`).join('');
+      if(keep) sel.value = keep;
+    });
+  }
+  function mountTranscribePanel(container, cfg){
+    container.innerHTML = `<details class="tx-panel">
+      <summary>🎤 Transcribe lyrics from a recording <span class="muted" style="font-weight:400">(a draft for you to check)</span></summary>
+      <div class="tx-body">
+        <div class="muted" style="font-size:12.5px">Use a recording you have: upload an mp3/m4a, or paste a Google Drive or direct audio-file link. Songs up to about 6 minutes work best; clear singing with little music works best. YouTube and Spotify links can't be used — they don't allow it.</div>
+        <div class="tx-link-note tx-info hidden"></div>
+        <div class="grid g-3">
+          <input type="file" class="tx-file input" accept="audio/*,video/mp4,.m4a,.mp3,.wav,.ogg,.webm,.flac" />
+          <input class="input tx-link" placeholder="…or a Google Drive / audio file link" />
+          <select class="tx-lang"></select>
+        </div>
+        <div class="row"><button type="button" class="btn primary tx-go">Transcribe</button><span class="tx-status muted" style="font-size:12.5px"></span></div>
+        <div class="tx-err hidden"></div>
+        <div class="tx-result hidden">
+          <div class="tx-notes"></div>
+          <textarea class="input tx-draft" rows="9" placeholder="The draft appears here"></textarea>
+          <div class="row-end" style="margin-top:6px"><button type="button" class="btn tx-use">Use as lyrics</button></div>
+        </div>
+      </div>
+    </details>`;
+    const q = s => container.querySelector(s);
+    const panel = { q };
+    txPanels.push(panel);
+    const status = q('.tx-status'), errBox = q('.tx-err'), result = q('.tx-result'), go = q('.tx-go');
+    const showErr = m => { errBox.textContent = m; errBox.classList.remove('hidden'); };
+    panel.reset = ()=>{ q('.tx-file').value=''; q('.tx-link').value=''; q('.tx-lang').value='__form__'; status.textContent=''; errBox.classList.add('hidden'); result.classList.add('hidden'); q('.tx-draft').value=''; q('.tx-notes').innerHTML=''; q('.tx-link-note').classList.add('hidden'); q('.tx-panel').open=false; };
+    container._tx = panel;
+
+    // "Use the audio link": offer it when it is something we can read, and explain when it is YouTube/Spotify
+    q('.tx-panel').addEventListener('toggle', ()=>{
+      if(!q('.tx-panel').open) return;
+      const a = (cfg.audioEl.value||'').trim(); const note = q('.tx-link-note');
+      note.classList.add('hidden');
+      if(!a) return;
+      if(TX_STREAMING.test(txHostOf(a))){ note.textContent = "The song's audio link is a streaming link (YouTube/Spotify etc.), which can't be transcribed. Upload a recording instead."; note.classList.remove('hidden'); }
+      else if(txLooksUsable(a) && !q('.tx-link').value){ q('.tx-link').value = a; note.textContent = "Filled in from the song's audio link."; note.classList.remove('hidden'); }
+    });
+
+    go.addEventListener('click', async ()=>{
+      errBox.classList.add('hidden'); result.classList.add('hidden');
+      let auth; try{ auth = requireAuthOrThrow(); }catch(e){ return showErr(e.message); }
+      const file = q('.tx-file').files[0]; const link = q('.tx-link').value.trim();
+      if(!file && !link) return showErr('Choose an audio file, or paste a Google Drive / audio file link.');
+      let language = q('.tx-lang').value; if(language==='__form__') language = (cfg.languageEl.value||'').trim();
+      if(TX_UNSUPPORTED_UI.includes(language.toLowerCase()) &&
+         !confirm("The transcription service doesn't support "+language+", so the draft will probably be mostly wrong — and it still costs a few cents. Try anyway?")) return;
+      const body = { action:'transcribeAudio', ...auth, language };
+      try{
+        if(file){
+          if(file.size > TX_MAX_UPLOAD) return showErr('That file is over 12 MB. Put it in Google Drive and paste the link instead, or use a shorter/smaller recording.');
+          status.textContent = 'Preparing the file…';
+          body.audioBase64 = await fileToBase64(file); body.fileName = file.name; body.mimeType = file.type || '';
+        } else if(txIsDrive(link)) body.driveUrl = link;
+        else {
+          if(TX_STREAMING.test(txHostOf(link))) return showErr("Audio can't be taken from YouTube, Spotify or similar sites — they don't allow it. Upload a recording you have, or put the file in Google Drive and paste that link.");
+          body.audioUrl = link;
+        }
+        go.disabled = true; status.textContent = 'Listening… this can take a minute.';
+        const r = await apiPostOnce(body);
+        if(!r.ok) throw new Error(r.error || 'That did not work.');
+        const notes = [];
+        (r.warnings||[]).forEach(w => notes.push(`<div class="tx-warn">${esc(w)}</div>`));
+        const cost = r.costUsd > 0 ? 'cost about ' + Math.max(1, Math.round(r.costUsd*100)) + '¢' : 'free';
+        notes.push(`<div class="tx-info">${r.lines} lines · ${r.minutes} min · ${cost}. This is a draft: read it through and fix mistakes before using it.</div>`);
+        q('.tx-notes').innerHTML = notes.join('');
+        q('.tx-draft').value = r.text;
+        result.classList.remove('hidden');
+        status.textContent = 'Done.';
+      }catch(e){ status.textContent=''; showErr(e.message || String(e)); }
+      finally{ go.disabled = false; }
+    });
+
+    q('.tx-use').addEventListener('click', ()=>{
+      const txt = q('.tx-draft').value.trim(); if(!txt) return;
+      const marks = (txt.match(/\[\?\]/g)||[]).length;
+      if(marks && !confirm(marks+' line(s) are still marked [?] (uncertain). Use the draft anyway?')) return;
+      if(cfg.lyricsEl.value.trim() && !confirm('Replace the lyrics already in the box?')) return;
+      cfg.lyricsEl.value = txt;
+      status.textContent = 'Copied into the Lyrics box above — check it and save.';
+    });
+  }
 
   // ================= SESSION (leader sign-in) =================
   function loadSession(){
@@ -568,7 +860,7 @@
     try{
       const [lk, ll] = await Promise.all([ apiGet({action:'listLookups'}), apiGet({action:'listLeaders'}) ]);
       fillSelect(els.qTheme,['','Any'].concat(lk.themes||[])); fillSelect(els.qLanguage,['','Any'].concat(lk.languages||[]));
-      fillSelect(els.fTheme,[''].concat(lk.themes||[])); fillSelect(els.fLanguage,[''].concat(lk.languages||[]));
+      fillSelect(els.fTheme,[''].concat(lk.themes||[])); fillSelect(els.fLanguage,[''].concat(lk.languages||[])); langList = lk.languages||[]; fillTxLangs();
       leaders = ll.leaders||[];
       fillLeaderPickers();
     }catch(e){ /* ignore; Test button will surface errors */ }
@@ -659,7 +951,7 @@
   });
 
   byId('btnClear').addEventListener('click', clearForm);
-  function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes','fLinkInput'].forEach(id=> els[id].value=''); els.fLinkResult.classList.add('hidden'); els.fLinkError.classList.add('hidden'); }
+  function clearForm(){ ['fSong','fVersionLabel','fVersionArtist','fArrangement','fLanguage','fTheme','fKey','fKeyM','fKeyF','fAudio','fLyricsLink','fLyrics','fNotes','fLinkInput'].forEach(id=> els[id].value=''); els.fLinkResult.classList.add('hidden'); els.fLinkError.classList.add('hidden'); if(els.txAdd._tx) els.txAdd._tx.reset(); }
   byId('btnAdd').addEventListener('click', async()=>{
     if(!els.fSong.value.trim()) return alert('Song is required');
     let auth; try{ auth = requireAuthOrThrow(); }catch(e){ return alert(e.message); }
@@ -681,8 +973,8 @@
           <td>${esc(row.Language||'')}</td>
           <td>${esc(row.Theme||'')}</td>
           <td>${esc(row.Key||'')}</td>
-          <td>${row.LinkAudio? `<a href="${esc(row.LinkAudio)}" target="_blank">Open</a>`:''}</td>
-          <td>${row.LinkLyrics? `<a href="${esc(row.LinkLyrics)}" target="_blank">Open</a>`:''}</td>
+          <td>${safeUrl(row.LinkAudio)? `<a href="${esc(safeUrl(row.LinkAudio))}" target="_blank" data-float="audio" data-title="${esc(row.Song)} — audio">Open</a>`:''}</td>
+          <td>${safeUrl(row.LinkLyrics)? `<a href="${esc(safeUrl(row.LinkLyrics))}" target="_blank" data-float="lyrics" data-title="${esc(row.Song)} — lyrics">Open</a>`:''}</td>
           <td>${esc(row.CreatedAt||'')}</td>
           <td>
             <button class="btn" data-act="approve" data-idx="${row._RowIndex}">Approve</button>
@@ -696,8 +988,9 @@
   // Catalog modal (admin edit/delete) — unchanged behaviour, now shared with the Sunday lyrics viewer
   function openModal(row, opts){
     opts = opts || {};
+    if(els.txEdit._tx) els.txEdit._tx.reset();
     currentRow=row; editMode=false;
-    els.mTitle.textContent=row.Song||''; els.mVersion.textContent=row.VersionLabel||''; els.mArtist.textContent=row.VersionArtist||''; els.mSlug.textContent=row.Slug||''; els.mLang.textContent=row.Language||''; els.mTheme.textContent=row.Theme||''; els.mKeys.textContent=[row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / '); els.mAudio.textContent=row.LinkAudio||''; els.mAudio.href=row.LinkAudio||'#'; els.mLyricsLink.textContent=row.LinkLyrics||''; els.mLyricsLink.href=row.LinkLyrics||'#'; els.mLyrics.textContent=row.Lyrics||(row.Lyrics===''?'No lyrics saved yet.':''); els.mNotes.textContent=row.ContextNotes||'';
+    els.mTitle.textContent=row.Song||''; els.mVersion.textContent=row.VersionLabel||''; els.mArtist.textContent=row.VersionArtist||''; els.mSlug.textContent=row.Slug||''; els.mLang.textContent=row.Language||''; els.mTheme.textContent=row.Theme||''; els.mKeys.textContent=[row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / '); els.mAudio.textContent=row.LinkAudio||''; els.mAudio.href=safeUrl(row.LinkAudio)||'#'; els.mAudio.dataset.title=(row.Song||'Audio')+' — audio'; els.mLyricsLink.textContent=row.LinkLyrics||''; els.mLyricsLink.href=safeUrl(row.LinkLyrics)||'#'; els.mLyricsLink.dataset.title=(row.Song||'Lyrics')+' — lyrics'; els.mLyrics.textContent=row.Lyrics||(row.Lyrics===''?'No lyrics saved yet.':''); els.mNotes.textContent=row.ContextNotes||'';
     els.eSong.value=row.Song||''; els.eVersionLabel.value=row.VersionLabel||''; els.eVersionArtist.value=row.VersionArtist||''; els.eArrangement.value=row.Arrangement||''; els.eLanguage.value=row.Language||''; els.eTheme.value=row.Theme||''; els.eKey.value=row.Key||''; els.eKeyM.value=row.TypicalKeyMale||''; els.eKeyF.value=row.TypicalKeyFemale||''; els.eAudio.value=row.LinkAudio||''; els.eLyricsLink.value=row.LinkLyrics||''; els.eLyrics.value=row.Lyrics||''; els.eNotes.value=row.ContextNotes||'';
     const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim());
     const showAdminBtns = adminReady && !opts.readOnly;
@@ -745,12 +1038,12 @@
       <div class="main">
         <div class="title">${esc(item.song)}${item.versionLabel?` <span class="muted" style="font-weight:400">— ${esc(item.versionLabel)}</span>`:''}</div>
         <div class="meta">${leaderChipHtml(item.leader)}${item.language?' · '+esc(item.language):''}</div>
-        <div class="tagrow">${tags.join('')}${lyricsBtn}</div>
+        <div class="tagrow">${tags.join('')}${audioBtnHtml(item)}${lyricsBtn}</div>
         ${item.flowNote?`<div class="flow">${esc(item.flowNote)}</div>`:''}
       </div>
     </li>`;
   }
-  function wireLyricsButtons(root){ root.querySelectorAll('.lyrics-btn').forEach(b => b.addEventListener('click', ()=> openModalBySlug(b.dataset.slug))); }
+  function wireLyricsButtons(root){ root.querySelectorAll('.lyrics-btn').forEach(b => b.addEventListener('click', ()=> openModalBySlug(b.dataset.slug))); wireAudioButtons(root); }
 
   function fillSundayPicker(services, currentId){
     els.sunPicker.innerHTML = (services||[]).map(s => `<option value="${s.serviceId}">${fmtDate(s.date)}${s.theme?' — '+esc(s.theme):''}${s.status==='Done'?' ✓':''}</option>`).join('');
@@ -856,7 +1149,7 @@
           <button class="btn small" data-down="${item.itemId}" ${idx===total-1?'disabled':''}>↓</button>
         </div></div>
       <div>
-        <div class="title" style="font-weight:650">${esc(item.song)}${item.versionLabel?` <span class="muted" style="font-weight:400">— ${esc(item.versionLabel)}</span>`:''} ${posted} ${lyricsBtn}</div>
+        <div class="title" style="font-weight:650">${esc(item.song)}${item.versionLabel?` <span class="muted" style="font-weight:400">— ${esc(item.versionLabel)}</span>`:''} ${posted} ${audioBtnHtml(item)} ${lyricsBtn}</div>
         <div class="fields" style="margin-top:6px">
           <input class="p-key" data-item="${item.itemId}" data-rev="${item.rev}" value="${esc(item.key)}" placeholder="Key" />
           <select class="p-part" data-item="${item.itemId}" data-rev="${item.rev}">${partOptions}</select>
@@ -989,6 +1282,9 @@
   });
 
   // ================= INIT =================
+  mountTranscribePanel(els.txAdd, { lyricsEl: els.fLyrics, languageEl: els.fLanguage, audioEl: els.fAudio });
+  mountTranscribePanel(els.txEdit, { lyricsEl: els.eLyrics, languageEl: els.eLanguage, audioEl: els.eAudio });
+  fillTxLangs();
   loadSession();
   if (els.apiBase.value) { (async()=>{ try{ await apiGet({action:'health'}); setOnline(true); await bootstrap(); await loadSundayPublic(); startPolling(); }catch{ setOnline(false) } })(); }
 })();
