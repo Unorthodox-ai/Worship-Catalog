@@ -67,6 +67,8 @@
     .banner.blocked{border-color:#f0c9c9;background:#fdf4f4}
     .svc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:12px}
     .svc-head h2{margin:0;font-size:18px}
+    .svc-head .row{flex-wrap:wrap;max-width:100%}
+    .svc-head select{max-width:100%;min-width:0}
     .status-pill{font-size:11px;border-radius:999px;padding:2px 9px;border:1px solid var(--line);color:var(--muted)}
     .status-pill.done{background:#eef7ee;color:var(--ok);border-color:#bfe3cc}
     .badges{padding:0 12px 12px}
@@ -92,11 +94,36 @@
     .practice-item .fields{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
     @media (max-width:800px){.practice-item{grid-template-columns:1fr}.practice-item .fields{grid-template-columns:1fr 1fr}}
     .practice-item .fields input,.practice-item .fields select{padding:6px 8px;font-size:13px}
+    .practice-item .fields .p-note{grid-column:3/5}
+    @media (max-width:800px){.practice-item .fields .p-note{grid-column:1/-1}}
     .conflict{font-size:12px;color:var(--danger);margin-top:4px}
     .cap{font-size:11px;color:var(--muted);margin-top:4px}
     .colswatches{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
     .swatch{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer}
     .swatch.sel{border-color:#111}
+    .notice-warn{font-size:13px;background:#fff8e1;border:1px solid #f0e0a0;border-radius:8px;padding:8px 10px}
+    .notice-info{font-size:13px;background:#eef4ff;border:1px solid #cfe0fb;border-radius:8px;padding:8px 10px;margin-bottom:10px}
+    .msg-ok{color:var(--ok)} .msg-err{color:var(--danger)}
+    .pend-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--line)}
+    .pend-row:first-child{border-top:none}
+    #tblMembers select{padding:5px 8px;font-size:13px;width:auto}
+    #tblMembers td .btn{margin:0 4px 4px 0}
+    .tag.off{background:#fdecec;border-color:#f0c9c9;color:var(--danger)}
+    .att-card{margin-bottom:12px}
+    .ans-row{display:flex;gap:8px;flex-wrap:wrap;padding:0 12px 4px}
+    .ans-btn{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 18px;font:inherit;cursor:pointer;min-width:84px}
+    .ans-btn.on.yes{background:#0a7d34;border-color:#0a7d34;color:#fff}
+    .ans-btn.on.maybe{background:#e69f00;border-color:#e69f00;color:#fff}
+    .ans-btn.on.no{background:#b00020;border-color:#b00020;color:#fff}
+    .ppl{padding:8px 12px 12px;display:grid;gap:6px}
+    .ppl div{font-size:13.5px;line-height:1.6}
+    .ppl .lbl{font-weight:650;margin-right:4px}
+    .ppl .nm{white-space:nowrap}
+    .ppl .nm i{color:var(--muted);font-style:italic}
+    .span2{grid-column:span 2}
+    .last4{grid-column:4}
+    @media (max-width:900px){.g-4>.span2,.g-4>.last4{grid-column:auto}}
+    @media (max-width:700px){.g-3>.span2{grid-column:auto}}
 
     /* floating pop-up windows for links */
     .float-win{position:fixed;z-index:60;background:#fff;border:1px solid #cfd6e2;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden;min-width:220px;min-height:90px}
@@ -139,15 +166,20 @@
 
     <!-- LEADER SIGN-IN -->
     <div class="signbar" id="signbar">
-      <span class="muted" style="font-size:13px">Leader sign-in:</span>
-      <div id="signedOutRow" class="wrap-row" style="flex:1">
-        <select id="loginName" style="max-width:160px"></select>
-        <input id="loginCode" class="input" placeholder="Team code" style="max-width:160px" />
-        <label class="muted" style="font-size:12px;display:flex;gap:4px;align-items:center"><input type="checkbox" id="loginRemember" checked style="width:auto" /> Remember me</label>
-        <button class="btn primary small" id="btnSignIn">Sign in</button>
+      <div id="acctOut" class="wrap-row" style="flex:1">
+        <button class="btn primary small" id="btnShowLogin">Sign in</button>
+        <button class="btn small" id="btnShowRegister">Create account</button>
+        <span class="muted" style="font-size:12.5px">Songs and Sunday's list are open to everyone. Sign in to join the choir's tools.</span>
+      </div>
+      <div id="acctIn" class="wrap-row hidden" style="flex:1">
+        <span class="muted" style="font-size:13px">Signed in as</span>
+        <span id="acctChip"></span>
+        <span class="tag" id="acctRole"></span>
+        <button class="btn small" id="btnAccount">Account</button>
+        <button class="btn small" id="btnAcctSignOut">Sign out</button>
       </div>
       <div id="signedInRow" class="wrap-row hidden" style="flex:1">
-        <span class="muted" style="font-size:13px">Signed in as</span>
+        <span class="muted" style="font-size:13px">Signed in with the team code as</span>
         <span id="signedInChip"></span>
         <button class="btn small" id="btnSignOut">Sign out</button>
       </div>
@@ -167,10 +199,12 @@
 
     <nav class="tabs">
       <button class="tab active" data-tab="sunday">This Sunday</button>
+      <button class="tab" data-tab="attendance">Attendance</button>
       <button class="tab" data-tab="catalog">Catalog</button>
       <button class="tab" data-tab="practice">Practice</button>
       <button class="tab" data-tab="add">Add Song</button>
       <button class="tab" data-tab="review">Review Queue</button>
+      <button class="tab hidden" data-tab="members">Members</button>
     </nav>
 
     <!-- THIS SUNDAY -->
@@ -197,6 +231,10 @@
           <div>
             <h2 id="sunTitle">Loading…</h2>
             <div class="muted" id="sunSub" style="font-size:12.5px"></div>
+            <div id="sunRecording" class="hidden" style="margin-top:6px">
+              <button class="btn small" id="btnRecording">▶ Worship recording</button>
+              <span class="muted" id="recTimes" style="font-size:12px"></span>
+            </div>
           </div>
           <div class="row" style="gap:8px">
             <select id="sunPicker" style="width:auto;min-width:180px"></select>
@@ -252,8 +290,8 @@
     <!-- PRACTICE -->
     <section id="view-practice" class="view hidden" style="margin-top:12px">
       <div id="practiceGate" class="card gate hidden">
-        <div>Sign in as a leader above to build or edit Sunday's setlist.</div>
-        <button class="btn primary" id="btnGateFocus">Go to sign-in</button>
+        <div id="practiceGateMsg">Sign in with a leader account to build or edit Sunday's setlist.</div>
+        <button class="btn primary" id="btnGateFocus">Sign in</button>
       </div>
 
       <div id="practiceBody" class="hidden">
@@ -271,6 +309,22 @@
         </div>
 
         <div class="card" style="margin-top:12px">
+          <div class="head"><span>Service recording (YouTube)</span><span class="muted" style="font-size:12px">Members get a button that plays just the worship part</span></div>
+          <div class="grid g-4" style="padding:12px">
+            <input id="rVideo" class="input span2" placeholder="YouTube link to the service" />
+            <input id="rStart" class="input" placeholder="Worship starts, e.g. 12:30" />
+            <input id="rEnd" class="input" placeholder="Worship ends, e.g. 42:00" />
+          </div>
+          <div class="muted" style="padding:0 12px;font-size:12px">Tip: in YouTube, pause where worship begins, right-click the video and choose "Copy video URL at current time". Pasting that link fills in the start time for you. This works on a Sunday that's already Done too.</div>
+          <div class="row-end" style="padding:12px;flex-wrap:wrap">
+            <span id="rMsg" style="font-size:12.5px;margin-right:auto"></span>
+            <button class="btn" id="btnRecPreview">Preview</button>
+            <button class="btn danger" id="btnRecClear">Remove</button>
+            <button class="btn primary" id="btnRecSave">Save recording</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
           <div class="head">Add a song</div>
           <div class="grid g-4" style="padding:12px">
             <select id="aLeader"></select>
@@ -284,7 +338,7 @@
               <div class="muted" style="font-size:12px;margin-bottom:4px">Style (pick up to 2)</div>
               <div class="style-picker" id="aStylePicker"></div>
             </div>
-            <input id="aFlowNote" class="input" placeholder="Flow note (order of verses, key change, cues…)" style="grid-column:2/4" />
+            <input id="aFlowNote" class="input span2" placeholder="Flow note (order of verses, key change, cues…)" />
           </div>
           <div class="row-end" style="padding:0 12px 12px">
             <button class="btn primary" id="btnAddItem">Add to list</button>
@@ -296,7 +350,7 @@
           <div class="grid g-4" style="padding:12px">
             <select id="postLeader"></select>
             <span id="postStatus" class="muted" style="align-self:center"></span>
-            <button class="btn primary" id="btnPost" style="grid-column:4/5">Post this leader's list</button>
+            <button class="btn primary last4" id="btnPost">Post this leader's list</button>
           </div>
         </div>
 
@@ -311,8 +365,8 @@
     <!-- ADD SONG -->
     <section id="view-add" class="view hidden" style="margin-top:12px">
       <div id="addGate" class="card gate hidden">
-        <div>Sign in as a leader above to suggest a new song for the catalogue.</div>
-        <button class="btn primary" id="btnAddGateFocus">Go to sign-in</button>
+        <div id="addGateMsg">Sign in with a leader account to suggest a new song for the catalogue.</div>
+        <button class="btn primary" id="btnAddGateFocus">Sign in</button>
       </div>
       <div id="addBody" class="card hidden">
         <div class="head">Add Song → Review Queue</div>
@@ -384,6 +438,120 @@
         </div>
       </div>
     </section>
+
+    <!-- ATTENDANCE -->
+    <section id="view-attendance" class="view hidden" style="margin-top:12px">
+      <div id="attGate" class="card gate hidden"><div>Sign in to see the practice schedule and tell the leaders if you're coming.</div><button class="btn primary" id="btnAttSignIn">Sign in</button></div>
+      <div id="attBody" class="hidden">
+        <div id="attMsg" style="font-size:13px;margin-bottom:8px"></div>
+        <div class="card hidden" id="attNew" style="margin-bottom:12px">
+          <div class="head">Add a practice <span class="muted" style="font-size:12px">Everyone is notified</span></div>
+          <div class="grid g-4" style="padding:12px">
+            <input id="npDate" type="date" class="input" />
+            <input id="npTime" type="time" class="input" value="19:00" />
+            <input id="npPlace" class="input" placeholder="Place (optional)" />
+            <input id="npNote" class="input" placeholder="Note, e.g. bring your folder (optional)" />
+          </div>
+          <div class="row-end" style="padding:0 12px 12px"><button class="btn primary" id="btnNewPractice">Add practice</button></div>
+        </div>
+        <div id="attList"></div>
+        <details class="settings" style="margin-top:12px" id="attPastWrap"><summary>Past practices</summary><div id="attPast" style="padding-top:8px"></div></details>
+      </div>
+    </section>
+
+    <!-- MEMBERS -->
+    <section id="view-members" class="view hidden" style="margin-top:12px">
+      <div id="memGate" class="card gate hidden"><div>Leaders and admins manage the choir's members here. Sign in with a leader account.</div></div>
+      <div id="memBody" class="hidden">
+        <div id="memMsg" style="font-size:13px;margin-bottom:8px"></div>
+        <div id="memCreated" class="notice-info hidden"></div>
+        <div class="card" id="memPendingCard">
+          <div class="head"><span id="memPendingCount">0 waiting for approval</span></div>
+          <div id="memPending"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="head"><span id="memCount">0 members</span><div class="chips" id="memVoiceChips"></div></div>
+          <div style="padding:12px"><input id="memSearch" class="input" placeholder="Search by name or username" /></div>
+          <div style="overflow-x:auto">
+            <table id="tblMembers">
+              <thead><tr><th>Member</th><th>Voice part</th><th>Role</th><th>Status</th><th>Last sign-in</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="head">Add a member <span class="muted" style="font-size:12px">They get a temporary password and choose their own at first sign-in</span></div>
+          <div class="grid g-4" style="padding:12px">
+            <input id="amName" class="input" placeholder="Full name" />
+            <select id="amVoice"></select>
+            <select id="amRole"><option value="Member">Member</option><option value="Leader">Leader (admin only)</option><option value="Admin">Admin (admin only)</option></select>
+            <input id="amUser" class="input" placeholder="Username (optional)" autocapitalize="none" />
+          </div>
+          <div class="row-end" style="padding:0 12px 12px"><button class="btn primary" id="btnAddMember">Create account</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- SIGN IN / CREATE ACCOUNT -->
+  <div id="authModal" class="modal">
+    <div class="panel card" style="max-width:440px">
+      <div class="head"><span>Welcome</span><button class="btn small" id="authClose" type="button">Close</button></div>
+      <div style="padding:12px" class="grid">
+        <div class="wrap-row">
+          <button class="tab active" id="tabLogin" type="button">Sign in</button>
+          <button class="tab" id="tabRegister" type="button">Create account</button>
+        </div>
+        <div id="authMsg" class="hidden" style="font-size:13px"></div>
+        <form id="formLogin" class="grid" novalidate>
+          <input id="lgUser" class="input" placeholder="Username" autocomplete="username" autocapitalize="none" spellcheck="false" />
+          <input id="lgPass" class="input" type="password" placeholder="Password" autocomplete="current-password" />
+          <button class="btn primary" id="btnLogin" type="submit">Sign in</button>
+          <div class="muted" style="font-size:12px">Forgot your password? Ask a leader to reset it for you.</div>
+        </form>
+        <form id="formRegister" class="grid hidden" novalidate>
+          <input id="rgName" class="input" placeholder="Your full name" autocomplete="name" />
+          <input id="rgUser" class="input" placeholder="Choose a username (letters and numbers)" autocomplete="username" autocapitalize="none" spellcheck="false" />
+          <select id="rgVoice"></select>
+          <input id="rgPass" class="input" type="password" placeholder="Choose a password (8+ characters)" autocomplete="new-password" />
+          <input id="rgJoin" class="input" placeholder="Join code (ask a leader)" autocapitalize="none" />
+          <button class="btn primary" id="btnRegister" type="submit">Ask to join</button>
+          <div class="muted" style="font-size:12px">A leader approves new accounts. We never store your password itself.</div>
+        </form>
+        <details class="settings">
+          <summary>Leaders: sign in the old way (team code)</summary>
+          <div class="wrap-row" style="padding-top:8px">
+            <select id="loginName" style="max-width:150px"></select>
+            <input id="loginCode" class="input" placeholder="Team code" style="max-width:150px" />
+            <label class="muted" style="font-size:12px;display:flex;gap:4px;align-items:center"><input type="checkbox" id="loginRemember" checked style="width:auto" /> Remember me</label>
+            <button class="btn small" id="btnSignIn" type="button">Sign in</button>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCOUNT -->
+  <div id="acctModal" class="modal">
+    <div class="panel card" style="max-width:440px">
+      <div class="head"><span>Your account</span><button class="btn small" id="acctClose" type="button">Close</button></div>
+      <div style="padding:12px" class="grid">
+        <div id="acctNotice" class="notice-warn hidden"></div>
+        <div class="muted" id="acctWho"></div>
+        <input id="apName" class="input" placeholder="Your name" autocomplete="name" />
+        <select id="apVoice"></select>
+        <button class="btn" id="btnSaveProfile" type="button">Save name and voice part</button>
+        <hr style="border:none;border-top:1px solid var(--line);width:100%" />
+        <form id="formPw" class="grid" novalidate>
+          <input id="apOld" class="input" type="password" placeholder="Current password" autocomplete="current-password" />
+          <input id="apNew" class="input" type="password" placeholder="New password (8+ characters)" autocomplete="new-password" />
+          <input id="apNew2" class="input" type="password" placeholder="New password again" autocomplete="new-password" />
+          <button class="btn primary" id="btnChangePw" type="submit">Change password</button>
+        </form>
+        <div id="acctMsg" class="hidden" style="font-size:13px"></div>
+      </div>
+    </div>
   </div>
 
   <!-- DETAILS MODAL (Catalog + Lyrics viewer) -->
@@ -472,7 +640,10 @@
 
   let currentRow = null; let editMode = false;
   let leaders = []; let lookups = { themes:[], languages:[], serviceParts:[], styles:[] };
-  let session = null;          // { name, teamCode }
+  let session = null;          // { name, teamCode }  (the old team-code sign-in, still accepted until switched off)
+  let account = null;          // { token, user } when signed in with a personal account
+  let att = null;              // the Attendance page data
+  let attBusy = false, noteTimer = null;   // one save at a time; notes save after a short pause
   let sunData = null;          // last /getSunday (or /getSundayLeader) response
   let songIndex = {};          // slug -> song row, for the Add-a-song datalist
   let pollTimer = null;
@@ -516,15 +687,32 @@
 
   // ---------- API ----------
   function apiGet(params){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) return Promise.reject(new Error('Set API URL')); const qsp = new URLSearchParams(params); return fetch(`${base}?${qsp.toString()}`).then(r=>{ if(!r.ok) throw new Error(`GET ${params.action} ${r.status}`); return r.json(); }); }
-  async function apiPost(body){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL'); try{ const r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},redirect:'follow',body:JSON.stringify(body)}); if(!r.ok) throw new Error(`POST ${body.action} ${r.status}`); return await r.json(); }catch(e){ const params=new URLSearchParams(Object.entries(body).map(([k,v])=>[k, typeof v==='object'? JSON.stringify(v):(v??'')])); const r2=await fetch(base,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},redirect:'follow',body:params.toString()}); if(!r2.ok) throw new Error(`POST(Fallback) ${body.action} ${r2.status}`); return await r2.json(); } }
+  async function apiPost(body){ const base = els.apiBase.value.trim(); if(!/^https?:\/\//.test(base)) throw new Error('Set API URL'); try{ const r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json'},redirect:'follow',body:JSON.stringify(body)}); if(!r.ok) throw new Error(`POST ${body.action} ${r.status}`); return handleAuthReply(await r.json()); }catch(e){ const params=new URLSearchParams(Object.entries(body).map(([k,v])=>[k, typeof v==='object'? JSON.stringify(v):(v??'')])); const r2=await fetch(base,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},redirect:'follow',body:params.toString()}); if(!r2.ok) throw new Error(`POST(Fallback) ${body.action} ${r2.status}`); return handleAuthReply(await r2.json()); } }
+  const DEFAULT_VOICE_PARTS = ['Soprano','Alto','Tenor','Bass','Band','Sound/Tech'];
+  function hasAdminPin(){ return !!(els.adminUser.value.trim() && els.adminPin.value.trim()); }
+  function isAccountLeader(){ return !!(account && account.user && (account.user.role==='Leader' || account.user.role==='Admin')); }
+  function isAdminAccount(){ return !!(account && account.user && account.user.role==='Admin'); }
+  function isLeaderish(){ return isAccountLeader() || !!session || hasAdminPin(); }        // may manage setlists
+  function isAdminNow(){ return isAdminAccount() || hasAdminPin(); }                         // may approve/edit songs
+  function canManageMembers(){ return isAccountLeader() || hasAdminPin(); }
+  function myLeaderName(){ return (account && account.user && (account.user.leaderName || account.user.name)) || (session && session.name) || ''; }
+  function voicePartList(){ return (lookups.voiceParts && lookups.voiceParts.length) ? lookups.voiceParts : DEFAULT_VOICE_PARTS; }
   function authFields(){
+    if(isAccountLeader()) return { token: account.token };
     if(session) return { leader: session.name, teamCode: session.teamCode };
-    if(els.adminUser.value.trim() && els.adminPin.value.trim()) return { adminUser: els.adminUser.value.trim(), adminPin: els.adminPin.value.trim() };
+    if(hasAdminPin()) return { adminUser: els.adminUser.value.trim(), adminPin: els.adminPin.value.trim() };
+    if(account) return { token: account.token };
     return {};
   }
+  function adminFields(){
+    if(isAdminAccount()) return { token: account.token };
+    if(hasAdminPin()) return { adminUser: els.adminUser.value.trim(), adminPin: els.adminPin.value.trim() };
+    return account ? { token: account.token } : {};
+  }
+  function mgrFields(){ return isAccountLeader() ? { token: account.token } : adminFields(); }
   function requireAuthOrThrow(){
     const a = authFields();
-    if(!a.leader && !a.adminUser) throw new Error('Sign in as a leader first');
+    if(!a.token && !a.leader && !a.adminUser) throw new Error('Sign in first');
     return a;
   }
 
@@ -551,6 +739,8 @@
       const p = new URLSearchParams({ rel:'0', playsinline:'1' });
       const st = ytStart(u.searchParams.get('t') || u.searchParams.get('start'));
       if(st) p.set('start', String(st));
+      const en = ytStart(u.searchParams.get('end'));
+      if(en) p.set('end', String(en));
       return { kind:'video', src:'https://www.youtube.com/embed/'+encodeURIComponent(id)+'?'+p.toString(), w:420, ratio:16/9 };
     }
     if(host==='youtu.be'){ const id = u.pathname.split('/')[1]; if(idOk(id)) return yt(id); }
@@ -585,6 +775,35 @@
   // ~100px holds the buttons, so at least 170px must stay visible on the left edge (80px on the right edge).
   function clampPos(x, y, w, vw, vh){
     return { x: Math.min(Math.max(x, 170 - w), vw - 80), y: Math.min(Math.max(y, 0), vh - 36) };
+  }
+  // "12:30", "1:02:03", "754" or "12m30s" -> seconds. null = blank, NaN = not a time.
+  function parseClock(v){
+    const t = String(v==null ? '' : v).trim();
+    if(!t) return null;
+    if(/^\d+$/.test(t)) return parseInt(t,10);
+    let m = t.match(/^(\d{1,2}):([0-5]?\d):([0-5]?\d)$/);
+    if(m) return (+m[1])*3600 + (+m[2])*60 + (+m[3]);
+    m = t.match(/^(\d{1,3}):([0-5]?\d)$/);
+    if(m) return (+m[1])*60 + (+m[2]);
+    m = t.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+    if(m && (m[1]||m[2]||m[3])) return (+m[1]||0)*3600 + (+m[2]||0)*60 + (+m[3]||0);
+    return NaN;
+  }
+  function fmtClock(sec){
+    if(sec==null || sec==='' || isNaN(Number(sec))) return '';
+    sec = Math.round(Number(sec));
+    const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+    const two = n => String(n).padStart(2,'0');
+    return h ? h+':'+two(m)+':'+two(s) : m+':'+two(s);
+  }
+  // The address to play: the saved YouTube link plus where the worship part starts and ends.
+  function recordingUrl(videoUrl, start, end){
+    const u = safeUrl(videoUrl); if(!u) return '';
+    const x = new URL(u);
+    ['t','start','end'].forEach(k => x.searchParams.delete(k));
+    if(start) x.searchParams.set('start', String(start));
+    if(end) x.searchParams.set('end', String(end));
+    return x.href;
   }
   // ---- FLOAT PURE HELPERS END ----
 
@@ -705,7 +924,7 @@
     if(!/^https?:\/\//.test(base)) throw new Error('Set API URL');
     const r = await fetch(base, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, redirect:'follow', body: JSON.stringify(body) });
     if(!r.ok) throw new Error('The server answered '+r.status);
-    return r.json();
+    return handleAuthReply(await r.json());
   }
   function fillTxLangs(){
     txPanels.forEach(p=>{
@@ -797,64 +1016,440 @@
     });
   }
 
-  // ================= SESSION (leader sign-in) =================
+  // ----- service recording card (Practice tab) + the button on This Sunday -----
+  let recLoadedFor = '';
+  function setRecMsg(text, isErr){ els.rMsg.textContent = text || ''; els.rMsg.style.color = isErr ? 'var(--danger)' : 'var(--ok)'; }
+  function fillRecordingCard(service){
+    const on = !!service;
+    [els.rVideo, els.rStart, els.rEnd, els.btnRecSave, els.btnRecPreview, els.btnRecClear].forEach(x => x.disabled = !on);
+    if(!service){ recLoadedFor = ''; els.rVideo.value = ''; els.rStart.value = ''; els.rEnd.value = ''; return; }
+    if(service.serviceId === recLoadedFor) return;                       // same Sunday: never overwrite what is being typed
+    recLoadedFor = service.serviceId;
+    els.rVideo.value = service.videoUrl || ''; els.rStart.value = fmtClock(service.worshipStart); els.rEnd.value = fmtClock(service.worshipEnd);
+    setRecMsg('');
+  }
+  function readRecordingFields(){
+    const url = els.rVideo.value.trim();
+    if(url && !/^https?:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\//i.test(url)) return { error:'Paste a YouTube link (youtube.com or youtu.be).' };
+    const start = parseClock(els.rStart.value), end = parseClock(els.rEnd.value);
+    if(Number.isNaN(start)) return { error:'Worship start should look like 12:30 or 1:05:00.' };
+    if(Number.isNaN(end)) return { error:'Worship end should look like 42:00 or 1:40:00.' };
+    if(start != null && end != null && end <= start) return { error:'Worship end must be after the start.' };
+    if(!url && (start != null || end != null)) return { error:'Add the YouTube link first.' };
+    return { url, start, end };
+  }
+  async function saveRecording(url, start, end, doneText){
+    try{
+      setRecMsg('Saving…');
+      const r = await apiPost({ action:'updateService', ...authFields(), serviceId: sunData.service.serviceId, videoUrl: url, worshipStart: start==null ? '' : start, worshipEnd: end==null ? '' : end });
+      if(!r.ok) throw new Error(r.error || 'That did not work.');
+      recLoadedFor = ''; await loadPractice(); setRecMsg(doneText);
+    }catch(e){ setRecMsg(e.message || String(e), true); }
+  }
+  els.btnRecSave.addEventListener('click', ()=>{
+    if(!sunData || !sunData.service) return setRecMsg('Load or create a Sunday first.', true);
+    const f = readRecordingFields(); if(f.error) return setRecMsg(f.error, true);
+    saveRecording(f.url, f.start, f.end, f.url ? 'Saved. Members now see a ▶ Worship recording button on This Sunday.' : 'Recording removed.');
+  });
+  els.btnRecClear.addEventListener('click', ()=>{
+    if(!sunData || !sunData.service) return;
+    if(!sunData.service.videoUrl){ els.rVideo.value = ''; els.rStart.value = ''; els.rEnd.value = ''; return setRecMsg(''); }
+    if(!confirm('Remove the recording from this Sunday?')) return;
+    saveRecording('', null, null, 'Recording removed.');
+  });
+  els.btnRecPreview.addEventListener('click', ()=>{
+    const f = readRecordingFields(); if(f.error) return setRecMsg(f.error, true);
+    if(!f.url) return setRecMsg('Paste the YouTube link first.', true);
+    setRecMsg(''); openFloat({ url: recordingUrl(f.url, f.start, f.end), title: 'Preview — worship recording' });
+  });
+  // a link copied "at the current time" carries ?t=… — use it to fill the start time
+  els.rVideo.addEventListener('change', ()=>{
+    const u = safeUrl(els.rVideo.value); if(!u || els.rStart.value.trim()) return;
+    try{ const x = new URL(u); const t = ytStart(x.searchParams.get('t') || x.searchParams.get('start')); if(t) els.rStart.value = fmtClock(t); }catch(e){}
+  });
+  els.btnRecording.addEventListener('click', ()=>{
+    const sv = sunData && sunData.service; if(!sv || !sv.videoUrl) return;
+    const worship = sv.worshipStart != null || sv.worshipEnd != null;
+    openFloat({ url: recordingUrl(sv.videoUrl, sv.worshipStart, sv.worshipEnd), title: (worship ? 'Worship — ' : 'Service — ') + fmtDate(sv.date) });
+  });
+
+  // ================= ACCOUNTS: sign in, create account, account window =================
+  function handleAuthReply(r){
+    if(r && r.ok===false && typeof r.error==='string' && account){
+      if(/sign in again|sign-in has expired/i.test(r.error)){ signOutLocal(); openAuth('login','Your sign-in has ended. Please sign in again.'); }
+      else if(/choose your own password first/i.test(r.error)){ openAccount(true); }
+    }
+    return r;
+  }
+  function setMsg(el, text, isErr){ el.textContent = text || ''; el.classList.toggle('hidden', !text); el.classList.toggle('msg-err', !!isErr); el.classList.toggle('msg-ok', !!text && !isErr); }
+  function fillVoiceSelects(){
+    const opts = voicePartList().map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    els.rgVoice.innerHTML = '<option value="">Your voice part…</option>' + opts;
+    els.apVoice.innerHTML = opts;
+    els.amVoice.innerHTML = '<option value="">Voice part…</option>' + opts;
+  }
+  function setAccount(token, user){
+    account = { token, user }; LS.set('wc_token', token);
+    session = null; LS.del('wc_leader_name'); LS.del('wc_leader_code');       // a personal account replaces the team-code sign-in
+    renderSession();
+  }
+  function signOutLocal(){ account = null; LS.del('wc_token'); renderSession(); }
   function loadSession(){
     const n = LS.get('wc_leader_name',''); const c = LS.get('wc_leader_code','');
     if(n && c) session = { name:n, teamCode:c };
     renderSession();
   }
+  async function restoreAccount(){
+    const t = LS.get('wc_token','');
+    if(!t || !/^https?:\/\//.test(els.apiBase.value.trim())) return;
+    try{
+      const r = await apiPostOnce({ action:'me', token:t });
+      if(r.ok){ account = { token:t, user:r.user }; session = null; renderSession(); if(r.user.mustChange) openAccount(true); loadSundayForCurrentTab(); }
+      else if(/sign in|expired/i.test(r.error||'')) LS.del('wc_token');
+    }catch(e){ /* offline: stay signed out for now, the saved sign-in is kept for next time */ }
+  }
   function renderSession(){
-    if(session){
-      els.signedOutRow.classList.add('hidden'); els.signedInRow.classList.remove('hidden');
-      els.signedInChip.innerHTML = leaderChipHtml(session.name);
-    } else {
-      els.signedOutRow.classList.remove('hidden'); els.signedInRow.classList.add('hidden');
+    const legacy = !account && !!session;
+    els.acctOut.classList.toggle('hidden', !!account || legacy);
+    els.acctIn.classList.toggle('hidden', !account);
+    els.signedInRow.classList.toggle('hidden', !legacy);
+    if(account){
+      const u = account.user;
+      els.acctChip.innerHTML = (u.role==='Leader' || u.role==='Admin') && u.leaderName ? leaderChipHtml(u.leaderName, {voice:false}) : `<strong>${esc(u.name)}</strong>`;
+      els.acctRole.textContent = u.role + (u.voicePart ? ' · ' + u.voicePart : '');
     }
+    if(legacy) els.signedInChip.innerHTML = leaderChipHtml(session.name);
+    const mgr = canManageMembers();
+    document.querySelector('.tab[data-tab="members"]').classList.toggle('hidden', !mgr);
+    if(!mgr && document.querySelector('.tab.active').dataset.tab==='members') selectTab('sunday');
     renderGates();
   }
   function renderGates(){
-    const signedIn = !!session || !!(els.adminUser.value.trim() && els.adminPin.value.trim());
-    els.practiceGate.classList.toggle('hidden', signedIn);
-    els.practiceBody.classList.toggle('hidden', !signedIn);
-    els.addGate.classList.toggle('hidden', signedIn);
-    els.addBody.classList.toggle('hidden', !signedIn);
+    const ok = isLeaderish();
+    const memberOnly = !!account && !ok;
+    els.practiceGate.classList.toggle('hidden', ok);
+    els.practiceBody.classList.toggle('hidden', !ok);
+    els.addGate.classList.toggle('hidden', ok);
+    els.addBody.classList.toggle('hidden', !ok);
+    els.practiceGateMsg.textContent = memberOnly ? 'Only leaders can build or edit setlists. If that should be you, ask an admin to make you a leader.' : "Sign in with a leader account to build or edit Sunday's setlist.";
+    els.addGateMsg.textContent = memberOnly ? 'Only leaders can suggest new songs. If that should be you, ask an admin to make you a leader.' : 'Sign in with a leader account to suggest a new song for the catalogue.';
+    els.btnGateFocus.classList.toggle('hidden', memberOnly); els.btnAddGateFocus.classList.toggle('hidden', memberOnly);
+    const mgr = canManageMembers();
+    els.memGate.classList.toggle('hidden', mgr); els.memBody.classList.toggle('hidden', !mgr);
+    els.attGate.classList.toggle('hidden', !!account); els.attBody.classList.toggle('hidden', !account);
+    els.attNew.classList.toggle('hidden', !isAccountLeader());
+    if(!account) att = null;
   }
+
+  function openAuth(which, message){
+    showAuthTab(which||'login'); setMsg(els.authMsg, message||'', false);
+    els.authModal.classList.add('open'); (which==='register' ? els.rgName : els.lgUser).focus();
+  }
+  function closeAuth(){ els.authModal.classList.remove('open'); }
+  function showAuthTab(which){
+    const reg = which==='register';
+    els.tabLogin.classList.toggle('active', !reg); els.tabRegister.classList.toggle('active', reg);
+    els.formLogin.classList.toggle('hidden', reg); els.formRegister.classList.toggle('hidden', !reg);
+    setMsg(els.authMsg,'');
+  }
+  els.btnShowLogin.addEventListener('click', ()=> openAuth('login'));
+  els.btnShowRegister.addEventListener('click', ()=> openAuth('register'));
+  els.tabLogin.addEventListener('click', ()=> showAuthTab('login'));
+  els.tabRegister.addEventListener('click', ()=> showAuthTab('register'));
+  els.authClose.addEventListener('click', closeAuth);
+  els.authModal.addEventListener('click', e=>{ if(e.target===els.authModal) closeAuth(); });
+  els.btnGateFocus.addEventListener('click', ()=> openAuth('login'));
+  els.btnAddGateFocus.addEventListener('click', ()=> openAuth('login'));
+
+  els.formLogin.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const username = els.lgUser.value.trim(), password = els.lgPass.value;
+    if(!username || !password) return setMsg(els.authMsg, 'Enter your username and password.', true);
+    els.btnLogin.disabled = true;
+    try{
+      const r = await apiPostOnce({ action:'login', username, password });
+      if(!r.ok) throw new Error(r.error || 'Could not sign in.');
+      els.lgPass.value = ''; setAccount(r.token, r.user); closeAuth();
+      if(r.user.mustChange) openAccount(true);
+      loadSundayForCurrentTab(); if(document.querySelector('.tab.active').dataset.tab==='members') loadMembers();
+    }catch(err){ setMsg(els.authMsg, err.message || String(err), true); }
+    finally{ els.btnLogin.disabled = false; }
+  });
+  els.formRegister.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const body = { action:'register', name: els.rgName.value.trim(), username: els.rgUser.value.trim(), voicePart: els.rgVoice.value, password: els.rgPass.value, joinCode: els.rgJoin.value.trim() };
+    if(!body.name || !body.username || !body.password || !body.joinCode) return setMsg(els.authMsg, 'Please fill in every box.', true);
+    if(!body.voicePart) return setMsg(els.authMsg, 'Please choose your voice part.', true);
+    els.btnRegister.disabled = true;
+    try{
+      const r = await apiPostOnce(body);
+      if(!r.ok) throw new Error(r.error || 'Could not create the account.');
+      els.lgUser.value = body.username; els.rgPass.value = ''; els.rgJoin.value = '';
+      showAuthTab('login'); setMsg(els.authMsg, 'Request sent. A leader will approve your account. Then sign in here with the username and password you just chose.', false);
+    }catch(err){ setMsg(els.authMsg, err.message || String(err), true); }
+    finally{ els.btnRegister.disabled = false; }
+  });
+
+  // the old team-code sign-in (kept until it is switched off in the Config sheet)
   els.btnSignIn.addEventListener('click', async ()=>{
     const name = els.loginName.value; const code = els.loginCode.value.trim();
     if(!name) return alert('Pick your name');
     if(!code) return alert('Enter the team code');
     try{
-      await apiPost({ action:'verifyLeader', leader:name, teamCode:code });
+      const r = await apiPost({ action:'verifyLeader', leader:name, teamCode:code });
+      if(r && r.ok===false) throw new Error(r.error);
       session = { name, teamCode: code };
       if(els.loginRemember.checked){ LS.set('wc_leader_name', name); LS.set('wc_leader_code', code); }
-      els.loginCode.value='';
-      renderSession();
-      loadSundayForCurrentTab();
+      els.loginCode.value=''; closeAuth(); renderSession(); loadSundayForCurrentTab();
     }catch(e){ alert(e.message||e); }
   });
   els.btnSignOut.addEventListener('click', ()=>{ session=null; LS.del('wc_leader_name'); LS.del('wc_leader_code'); renderSession(); loadSundayForCurrentTab(); });
-  [els.adminUser, els.adminPin].forEach(inp => inp.addEventListener('input', renderGates));
-  els.btnGateFocus.addEventListener('click', ()=> els.loginName.focus());
-  els.btnAddGateFocus.addEventListener('click', ()=> els.loginName.focus());
+  els.btnAcctSignOut.addEventListener('click', ()=>{ signOutLocal(); loadSundayForCurrentTab(); });
+  [els.adminUser, els.adminPin].forEach(inp => inp.addEventListener('input', renderSession));
+
+  function openAccount(forced){
+    if(!account) return;
+    const u = account.user;
+    els.acctWho.textContent = u.username + ' · ' + u.role;
+    els.apName.value = u.name; els.apVoice.value = u.voicePart || '';
+    [els.apOld, els.apNew, els.apNew2].forEach(i=> i.value='');
+    setMsg(els.acctMsg,'');
+    els.acctNotice.textContent = forced ? 'Please choose your own password now. The temporary one only works for this step.' : '';
+    els.acctNotice.classList.toggle('hidden', !forced);
+    els.acctModal.classList.add('open');
+  }
+  els.btnAccount.addEventListener('click', ()=> openAccount(false));
+  els.acctClose.addEventListener('click', ()=> els.acctModal.classList.remove('open'));
+  els.acctModal.addEventListener('click', e=>{ if(e.target===els.acctModal) els.acctModal.classList.remove('open'); });
+  els.btnSaveProfile.addEventListener('click', async ()=>{
+    try{
+      const r = await apiPostOnce({ action:'updateProfile', token: account.token, name: els.apName.value, voicePart: els.apVoice.value });
+      if(!r.ok) throw new Error(r.error);
+      account.user = r.user; renderSession(); setMsg(els.acctMsg, 'Saved.', false);
+    }catch(e){ setMsg(els.acctMsg, e.message||String(e), true); }
+  });
+  els.formPw.addEventListener('submit', async e=>{
+    e.preventDefault();
+    if(els.apNew.value !== els.apNew2.value) return setMsg(els.acctMsg, "The two new passwords don't match.", true);
+    els.btnChangePw.disabled = true;
+    try{
+      const r = await apiPostOnce({ action:'changePassword', token: account.token, oldPassword: els.apOld.value, newPassword: els.apNew.value });
+      if(!r.ok) throw new Error(r.error);
+      setAccount(r.token, r.user); [els.apOld, els.apNew, els.apNew2].forEach(i=> i.value='');
+      els.acctNotice.classList.add('hidden'); setMsg(els.acctMsg, 'Password changed. Other devices have been signed out.', false);
+      loadSundayForCurrentTab();
+    }catch(err){ setMsg(els.acctMsg, err.message||String(err), true); }
+    finally{ els.btnChangePw.disabled = false; }
+  });
+
+  // ================= ATTENDANCE (who is coming to practice) =================
+  function fmtTime(t){ const m = String(t||'').match(/^(\d{2}):(\d{2})$/); if(!m) return ''; const h = +m[1]; return ((h%12)||12) + ':' + m[2] + ' ' + (h<12 ? 'AM' : 'PM'); }
+  function setAttMsg(text, isErr){ setMsg(els.attMsg, text, isErr); }
+  async function loadAttendance(){
+    renderGates();
+    if(!account) return;
+    try{
+      const r = await apiPostOnce({ action:'listPractices', token: account.token });
+      if(!r.ok) throw new Error(r.error);
+      att = r; renderAttendance();
+    }catch(e){ setAttMsg(e.message || String(e), true); }
+  }
+  function peopleHtml(p){
+    const groups = [['Yes','Coming','yes'],['Maybe','Maybe','maybe'],['No','Not coming','no'],['','No answer yet','none']];
+    return groups.map(([key,label]) => {
+      const list = p.people.filter(x => x.response === key);
+      if(!list.length && key==='' ) return '';
+      const names = list.length ? list.map(x => `<span class="nm">${esc(x.name)}${x.voicePart ? ' <span class="muted">· '+esc(x.voicePart)+'</span>' : ''}${x.note ? ' <i>— '+esc(x.note)+'</i>' : ''}</span>`).join(', ') : '<span class="muted">nobody yet</span>';
+      return `<div><span class="lbl">${label} (${list.length})</span>${names}</div>`;
+    }).join('');
+  }
+  function practiceCardHtml(p){
+    const cancelled = p.status === 'Cancelled';
+    const canAnswer = !cancelled && !p.closed;
+    const mine = p.myResponse;
+    const head = `<div class="svc-head"><div><h2 style="font-size:17px">${esc(fmtDate(p.date))} · ${esc(fmtTime(p.time))}</h2>
+        <div class="muted" style="font-size:12.5px">${esc(p.place||'')}${p.place && p.note ? ' · ' : ''}${esc(p.note||'')}</div></div>
+        ${cancelled ? '<span class="status-pill" style="border-color:#f0c9c9;color:var(--danger)">Cancelled</span>' : (p.closed ? '<span class="status-pill">Done</span>' : '')}</div>`;
+    const answer = canAnswer ? `<div class="ans-row" role="group" aria-label="Are you coming?">
+        ${['Yes','Maybe','No'].map(r => `<button class="ans-btn ${r.toLowerCase()} ${mine===r?'on':''}" data-att="answer" data-id="${esc(p.practiceId)}" data-resp="${r}">${r}</button>`).join('')}</div>
+      <div style="padding:6px 12px 8px"><input class="input att-note" data-id="${esc(p.practiceId)}" placeholder="Reason or note for the leaders (optional)" value="${esc(p.myNote||'')}" maxlength="200" /></div>` : '';
+    const lists = cancelled ? '' : `<div class="ppl">${peopleHtml(p)}</div>`;
+    let tools = '';
+    if(att.isManager && !p.closed){
+      const opts = p.people.map(x => `<option value="${esc(x.userId)}">${esc(x.name)}</option>`).join('');
+      tools = `<details class="settings" style="margin:0 12px 12px"><summary>Leader tools</summary>
+        <div class="grid" style="padding-top:8px">
+          <div class="wrap-row"><span class="muted" style="font-size:12.5px">Answer for someone:</span>
+            <select class="att-who" data-id="${esc(p.practiceId)}" style="width:auto;max-width:200px">${opts}</select>
+            ${['Yes','Maybe','No'].map(r => `<button class="btn small" data-att="for" data-id="${esc(p.practiceId)}" data-resp="${r}">${r}</button>`).join('')}
+            <button class="btn small" data-att="for" data-id="${esc(p.practiceId)}" data-resp="">Clear</button></div>
+          <div class="grid g-4">
+            <input type="date" class="input ed-date" value="${esc(p.date)}" data-id="${esc(p.practiceId)}" />
+            <input type="time" class="input ed-time" value="${esc(p.time)}" data-id="${esc(p.practiceId)}" />
+            <input class="input ed-place" value="${esc(p.place||'')}" placeholder="Place" data-id="${esc(p.practiceId)}" />
+            <input class="input ed-note" value="${esc(p.note||'')}" placeholder="Note" data-id="${esc(p.practiceId)}" />
+          </div>
+          <div class="wrap-row"><button class="btn small primary" data-att="save" data-id="${esc(p.practiceId)}">Save changes</button>
+            <button class="btn small ${cancelled?'':'danger'}" data-att="${cancelled?'reopen':'cancel'}" data-id="${esc(p.practiceId)}">${cancelled?'Reopen practice':'Cancel practice'}</button>
+            ${isAdminNow() ? `<button class="btn small danger" data-att="delete" data-id="${esc(p.practiceId)}">Delete</button>` : ''}</div>
+        </div></details>`;
+    }
+    return `<div class="card att-card" data-id="${esc(p.practiceId)}">${head}${answer}${lists}${tools}</div>`;
+  }
+  function renderAttendance(){
+    const upcoming = att.practices.filter(p => !p.closed), past = att.practices.filter(p => p.closed);
+    els.attList.innerHTML = upcoming.length ? upcoming.map(practiceCardHtml).join('') : '<div class="card empty">No practices scheduled yet.</div>';
+    els.attPastWrap.classList.toggle('hidden', !past.length);
+    els.attPast.innerHTML = past.map(practiceCardHtml).join('');
+    if(!els.npDate.value){ const t = new Date(); els.npDate.min = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'); }
+  }
+  async function attCall(body, okText){
+    if(attBusy) return null;                       // ignore taps while a save is in progress, so answers can never arrive out of order
+    attBusy = true;
+    try{
+      const r = await apiPostOnce({ ...body });
+      if(!r.ok) throw new Error(r.error);
+      await loadAttendance(); setAttMsg(okText || '', false); return r;
+    }catch(e){ await loadAttendance(); setAttMsg(e.message || String(e), true); return null; }
+    finally{ attBusy = false; }
+  }
+  const attCard = id => byId('view-attendance').querySelector(`.att-card[data-id="${id}"]`);
+  byId('view-attendance').addEventListener('click', async e=>{
+    const b = e.target.closest('[data-att]'); if(!b) return;
+    clearTimeout(noteTimer);                       // a tap on an answer carries the note along, so a pending note save is not needed
+    const act = b.dataset.att, id = b.dataset.id, card = attCard(id);
+    if(act==='answer'){
+      const p = att.practices.find(x => x.practiceId===id); const resp = (p && p.myResponse===b.dataset.resp) ? '' : b.dataset.resp;
+      return void await attCall({ action:'rsvp', token: account.token, practiceId:id, response: resp, note: card.querySelector('.att-note').value }, resp ? 'Saved: '+resp+'.' : 'Answer cleared.');
+    }
+    if(act==='for'){ const uid = card.querySelector('.att-who').value; const name = card.querySelector('.att-who').selectedOptions[0].textContent;
+      return void await attCall({ action:'rsvpFor', ...mgrFields(), practiceId:id, userId:uid, response: b.dataset.resp }, b.dataset.resp ? 'Recorded '+b.dataset.resp+' for '+name+'.' : 'Cleared '+name+"'s answer."); }
+    if(act==='save') return void await attCall({ action:'updatePractice', ...mgrFields(), practiceId:id, date: card.querySelector('.ed-date').value, time: card.querySelector('.ed-time').value, place: card.querySelector('.ed-place').value, note: card.querySelector('.ed-note').value }, 'Saved. If you changed the date or time, everyone was notified.');
+    if(act==='cancel'){ if(!confirm('Cancel this practice? Everyone will be notified.')) return; return void await attCall({ action:'updatePractice', ...mgrFields(), practiceId:id, status:'Cancelled' }, 'Practice cancelled.'); }
+    if(act==='reopen') return void await attCall({ action:'updatePractice', ...mgrFields(), practiceId:id, status:'Open' }, 'Practice reopened.');
+    if(act==='delete'){ if(!confirm('Delete this practice and everyone\'s answers for good?')) return; return void await attCall({ action:'deletePractice', ...adminFields(), practiceId:id }, 'Practice deleted.'); }
+  });
+  byId('view-attendance').addEventListener('change', async e=>{
+    const inp = e.target.closest('.att-note'); if(!inp) return;
+    const p = att && att.practices.find(x => x.practiceId===inp.dataset.id); if(!p) return;
+    if(!p.myResponse) return setAttMsg('Choose Yes, Maybe or No first, then add your note.', false);
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(()=> attCall({ action:'rsvp', token: account.token, practiceId:p.practiceId, response:p.myResponse, note:inp.value }, 'Note saved.'), 700);
+  });
+  els.btnNewPractice.addEventListener('click', async ()=>{
+    if(!els.npDate.value) return setAttMsg('Pick a date for the practice.', true);
+    if(!els.npTime.value) return setAttMsg('Pick a start time.', true);
+    const r = await attCall({ action:'createPractice', ...mgrFields(), date: els.npDate.value, time: els.npTime.value, place: els.npPlace.value, note: els.npNote.value }, 'Practice added and everyone was notified.');
+    if(r){ els.npDate.value=''; els.npPlace.value=''; els.npNote.value=''; }
+  });
+  els.btnAttSignIn.addEventListener('click', ()=> openAuth('login'));
+
+  // ================= MEMBERS (leaders and admins) =================
+  let memData = { users: [], role: '', you: '' };
+  function setMemMsg(text, isErr){ setMsg(els.memMsg, text, isErr); }
+  function showCreated(html){ els.memCreated.innerHTML = html; els.memCreated.classList.remove('hidden'); }
+  async function loadMembers(){
+    if(!canManageMembers()) return;
+    try{
+      const r = await apiPostOnce({ action:'listUsers', ...mgrFields() });
+      if(!r.ok) throw new Error(r.error);
+      memData = { users: r.users||[], role: r.role||'', you: r.you||'' };
+      if(r.voiceParts && r.voiceParts.length) lookups.voiceParts = r.voiceParts;
+      fillVoiceSelects(); renderMembers(); setMemMsg('');
+    }catch(e){ setMemMsg(e.message||String(e), true); }
+  }
+  function renderMembers(){
+    const isAdmin = memData.role==='Admin';
+    els.amRole.disabled = !isAdmin; if(!isAdmin) els.amRole.value = 'Member';
+    const pend = memData.users.filter(u => u.status==='Pending');
+    const rest = memData.users.filter(u => u.status!=='Pending');
+    els.memPendingCount.textContent = pend.length + (pend.length===1 ? ' person' : ' people') + ' waiting for approval';
+    els.memPendingCard.classList.toggle('hidden', !pend.length);
+    els.memPending.innerHTML = pend.map(u => `<div class="pend-row">
+        <div><strong>${esc(u.name)}</strong> <span class="muted">@${esc(u.username)} · ${esc(u.voicePart||'no voice part')} · asked ${esc(ago(u.createdAt))}</span></div>
+        <div><button class="btn primary small" data-act="approve" data-id="${esc(u.userId)}">Approve</button> <button class="btn danger small" data-act="decline" data-id="${esc(u.userId)}">Decline</button></div></div>`).join('');
+    const q = els.memSearch.value.trim().toLowerCase();
+    const shown = rest.filter(u => !q || u.name.toLowerCase().includes(q) || u.username.includes(q));
+    const active = rest.filter(u => u.status==='Active');
+    els.memCount.textContent = active.length + ' active member' + (active.length===1?'':'s') + (rest.length!==active.length ? ' · ' + (rest.length-active.length) + ' switched off' : '');
+    const counts = {}; active.forEach(u => { const k = u.voicePart || 'No voice part'; counts[k] = (counts[k]||0)+1; });
+    els.memVoiceChips.innerHTML = Object.keys(counts).map(k => `<span class="tag">${esc(k)} ${counts[k]}</span>`).join('');
+    const voiceOpts = cur => ['']. concat(voicePartList()).map(v => `<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v||'—')}</option>`).join('');
+    els.tblMembers.querySelector('tbody').innerHTML = shown.length ? shown.map(u => {
+      const self = u.userId === memData.you;
+      const roleCell = isAdmin ? `<select class="mem-role" data-id="${esc(u.userId)}" ${self?'disabled':''}>${['Member','Leader','Admin'].map(r=>`<option ${r===u.role?'selected':''}>${r}</option>`).join('')}</select>` : esc(u.role);
+      const canReset = isAdmin || u.role==='Member';
+      return `<tr>
+        <td><strong>${esc(u.name)}</strong>${self?' <span class="muted">(you)</span>':''}<div class="muted" style="font-size:12px">@${esc(u.username)}</div></td>
+        <td><select class="mem-voice" data-id="${esc(u.userId)}">${voiceOpts(u.voicePart)}</select></td>
+        <td>${roleCell}</td>
+        <td><span class="tag ${u.status==='Active'?'':'off'}">${esc(u.status)}</span></td>
+        <td class="muted">${u.lastLogin ? esc(ago(u.lastLogin)) : 'never'}</td>
+        <td>${canReset ? `<button class="btn small" data-act="reset" data-id="${esc(u.userId)}">Reset password</button>` : ''}${isAdmin && !self ? `<button class="btn small" data-act="toggle" data-id="${esc(u.userId)}">${u.status==='Active'?'Switch off':'Switch on'}</button><button class="btn danger small" data-act="delete" data-id="${esc(u.userId)}">Delete</button>` : ''}</td>
+      </tr>`; }).join('') : `<tr><td colspan="6" class="muted" style="text-align:center;padding:18px">No members found</td></tr>`;
+  }
+  async function memCall(body, okText){
+    try{
+      const r = await apiPostOnce({ ...body, ...mgrFields() });
+      if(!r.ok) throw new Error(r.error);
+      await loadMembers(); if(okText) setMemMsg(okText, false);
+      return r;
+    }catch(e){ setMemMsg(e.message||String(e), true); await loadMembers(); setMemMsg(e.message||String(e), true); return null; }
+  }
+  function tempBox(name, username, temp){
+    showCreated(`Temporary password for <strong>${esc(name)}</strong> (username <strong>${esc(username)}</strong>): <strong style="font-size:16px;letter-spacing:.5px" id="tempPw">${esc(temp)}</strong> <button class="btn small" id="btnCopyTemp" type="button">Copy</button><div class="muted" style="margin-top:4px">Give it to them privately. They'll be asked to choose their own the first time they sign in. It is shown only once.</div>`);
+    const b = document.getElementById('btnCopyTemp');
+    if(b) b.addEventListener('click', ()=>{ try{ navigator.clipboard.writeText(temp); b.textContent='Copied'; }catch(e){ b.textContent='Select and copy it'; } });
+  }
+  els.memSearch.addEventListener('input', renderMembers);
+  byId('view-members').addEventListener('click', async e=>{
+    const b = e.target.closest('button[data-act]'); if(!b) return;
+    const id = b.dataset.id, u = memData.users.find(x=>x.userId===id); if(!u) return;
+    const act = b.dataset.act;
+    if(act==='approve') return void await memCall({ action:'approveUser', userId:id }, u.name+' can now sign in.');
+    if(act==='decline'){ if(!confirm('Decline '+u.name+"'s request? They can ask again.")) return; return void await memCall({ action:'rejectUser', userId:id }, 'Request declined.'); }
+    if(act==='reset'){ if(!confirm('Give '+u.name+' a new temporary password? They will be signed out everywhere.')) return;
+      const r = await memCall({ action:'resetPassword', userId:id }); if(r) tempBox(u.name, r.username, r.tempPassword); return; }
+    if(act==='toggle'){ const to = u.status==='Active' ? 'Disabled' : 'Active';
+      if(to==='Disabled' && !confirm('Switch off '+u.name+"'s account? They won't be able to sign in.")) return;
+      return void await memCall({ action:'updateUser', userId:id, status:to }, u.name+(to==='Active'?' is switched on.':' is switched off.')); }
+    if(act==='delete'){ if(!confirm('Delete '+u.name+"'s account for good?")) return; return void await memCall({ action:'deleteUser', userId:id }, 'Account deleted.'); }
+  });
+  byId('view-members').addEventListener('change', async e=>{
+    const sel = e.target.closest('select.mem-voice, select.mem-role'); if(!sel) return;
+    const id = sel.dataset.id, u = memData.users.find(x=>x.userId===id); if(!u) return;
+    if(sel.classList.contains('mem-voice')) return void await memCall({ action:'updateUser', userId:id, voicePart: sel.value }, 'Saved.');
+    if(sel.value==='Admin' && !confirm('Make '+u.name+' an admin? Admins can change roles, approve songs and delete accounts.')){ sel.value = u.role; return; }
+    await memCall({ action:'updateUser', userId:id, role: sel.value }, u.name+' is now '+(sel.value==='Admin'?'an admin':'a '+sel.value.toLowerCase())+'. They have been signed out so it applies straight away.');
+  });
+  els.btnAddMember.addEventListener('click', async ()=>{
+    const name = els.amName.value.trim(); if(!name) return setMemMsg('Enter their name.', true);
+    if(!els.amVoice.value) return setMemMsg('Choose a voice part.', true);
+    const r = await memCall({ action:'addUser', name, voicePart: els.amVoice.value, role: els.amRole.value, username: els.amUser.value.trim() }, 'Account created.');
+    if(r){ tempBox(name, r.username, r.tempPassword); els.amName.value=''; els.amUser.value=''; }
+  });
 
   // ================= TABS =================
   document.querySelectorAll('.tab').forEach(btn=> btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
     const t = btn.dataset.tab;
-    ['sunday','catalog','practice','add','review'].forEach(k => byId('view-'+k).classList.toggle('hidden', k!==t));
+    ['sunday','catalog','practice','add','review','members','attendance'].forEach(k => byId('view-'+k).classList.toggle('hidden', k!==t));
+    if(t==='attendance') loadAttendance();
     if(t==='review') loadReview();
+    if(t==='members') loadMembers();
     if(t==='sunday' || t==='practice') loadSundayForCurrentTab();
   }));
   function loadSundayForCurrentTab(){
     const activeTab = document.querySelector('.tab.active').dataset.tab;
-    if(activeTab==='practice') loadPractice(); else loadSundayPublic();
+    if(activeTab==='attendance') loadAttendance();
+    else if(activeTab==='practice') loadPractice(); else loadSundayPublic();
   }
 
   // ================= SETTINGS =================
   els.apiBase.value = LS.get('wc_api_base',''); els.adminUser.value = LS.get('wc_admin_user',''); els.adminPin.value = LS.get('wc_admin_pin','');
   els.btnSaveSettings.addEventListener('click', ()=>{ LS.set('wc_api_base', els.apiBase.value.trim()); LS.set('wc_admin_user', els.adminUser.value.trim()); LS.set('wc_admin_pin', els.adminPin.value.trim()); renderGates(); alert('Saved.'); });
   els.btnTest.addEventListener('click', async()=>{ try{ const r=await apiGet({action:'health'}); setOnline(true); await bootstrap(); alert('Backend OK: '+(r.time||'')); }catch(e){ setOnline(false); alert(e.message||e); } });
-  els.btnTestPush.addEventListener('click', async()=>{ try{ const r = await apiPost({ action:'testNotification', adminUser: els.adminUser.value.trim(), adminPin: els.adminPin.value.trim() }); alert(r.ok? 'Sent. If nobody is subscribed yet, nothing will show up.' : 'Failed: '+(r.error||'')); }catch(e){ alert(e.message||e); } });
+  els.btnTestPush.addEventListener('click', async()=>{ try{ const r = await apiPost({ action:'testNotification', ...adminFields() }); alert(r.ok? 'Sent. If nobody is subscribed yet, nothing will show up.' : 'Failed: '+(r.error||'')); }catch(e){ alert(e.message||e); } });
 
   async function bootstrap(){
     try{
@@ -866,7 +1461,7 @@
     }catch(e){ /* ignore; Test button will surface errors */ }
     try{
       const lk3 = await apiGet({action:'listLookupsV3'});
-      lookups = lk3;
+      lookups = lk3; fillVoiceSelects();
       fillSelect(els.aServicePart, [''].concat(lookups.serviceParts||[]));
       renderStylePicker();
     }catch(e){ /* v3 not deployed yet? leave lookups empty */ }
@@ -876,7 +1471,7 @@
     els.loginName.innerHTML = opts;
     els.aLeader.innerHTML = opts;
     els.postLeader.innerHTML = opts;
-    if(session){ els.aLeader.value = session.name; els.postLeader.value = session.name; }
+    const mine = myLeaderName(); if(mine){ els.aLeader.value = mine; els.postLeader.value = mine; }
     renderSession();
   }
   function renderStylePicker(){
@@ -980,9 +1575,9 @@
             <button class="btn" data-act="approve" data-idx="${row._RowIndex}">Approve</button>
             <button class="btn danger" data-act="reject" data-idx="${row._RowIndex}">Reject</button>
           </td>`; tb.appendChild(tr); }); if(!rows.length){ const tr=document.createElement('tr'); tr.innerHTML=`<td colspan="11" class="muted" style="text-align:center;padding:18px">No pending rows</td>`; tb.appendChild(tr); }
-      tb.querySelectorAll('button[data-act="approve"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'approveReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); alert('Approved → '+r.slug); loadReview(); }catch(e){ alert(e.message||e); } }));
-      tb.querySelectorAll('button[data-act="reject"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'rejectReviewRow', rowIndex: idx, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); loadReview(); }catch(e){ alert(e.message||e); } }));
-      byId('btnBulkApprove').onclick = async()=>{ const rows=Array.from(document.querySelectorAll('.rev-chk:checked')).map(x=> parseInt(x.dataset.idx,10)); if(!rows.length) return alert('Select at least one'); try{ const r=await apiPost({ action:'bulkApprove', rowIndices: rows, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); alert('Bulk approved: '+ r.results.filter(x=>x.ok).length +'/'+ r.results.length); loadReview(); }catch(e){ alert(e.message||e); } };
+      tb.querySelectorAll('button[data-act="approve"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'approveReviewRow', rowIndex: idx, ...adminFields() }); if(!r.ok) throw new Error(r.error); alert('Approved → '+r.slug); loadReview(); }catch(e){ alert(e.message||e); } }));
+      tb.querySelectorAll('button[data-act="reject"]').forEach(btn=> btn.addEventListener('click', async()=>{ const idx=parseInt(btn.dataset.idx,10); try{ const r=await apiPost({ action:'rejectReviewRow', rowIndex: idx, ...adminFields() }); if(!r.ok) throw new Error(r.error); loadReview(); }catch(e){ alert(e.message||e); } }));
+      byId('btnBulkApprove').onclick = async()=>{ const rows=Array.from(document.querySelectorAll('.rev-chk:checked')).map(x=> parseInt(x.dataset.idx,10)); if(!rows.length) return alert('Select at least one'); try{ const r=await apiPost({ action:'bulkApprove', rowIndices: rows, ...adminFields() }); alert('Bulk approved: '+ r.results.filter(x=>x.ok).length +'/'+ r.results.length); loadReview(); }catch(e){ alert(e.message||e); } };
     }catch(e){ alert(e.message||e); } }
 
   // Catalog modal (admin edit/delete) — unchanged behaviour, now shared with the Sunday lyrics viewer
@@ -992,7 +1587,7 @@
     currentRow=row; editMode=false;
     els.mTitle.textContent=row.Song||''; els.mVersion.textContent=row.VersionLabel||''; els.mArtist.textContent=row.VersionArtist||''; els.mSlug.textContent=row.Slug||''; els.mLang.textContent=row.Language||''; els.mTheme.textContent=row.Theme||''; els.mKeys.textContent=[row.Key,row.TypicalKeyMale,row.TypicalKeyFemale].filter(Boolean).join(' / '); els.mAudio.textContent=row.LinkAudio||''; els.mAudio.href=safeUrl(row.LinkAudio)||'#'; els.mAudio.dataset.title=(row.Song||'Audio')+' — audio'; els.mLyricsLink.textContent=row.LinkLyrics||''; els.mLyricsLink.href=safeUrl(row.LinkLyrics)||'#'; els.mLyricsLink.dataset.title=(row.Song||'Lyrics')+' — lyrics'; els.mLyrics.textContent=row.Lyrics||(row.Lyrics===''?'No lyrics saved yet.':''); els.mNotes.textContent=row.ContextNotes||'';
     els.eSong.value=row.Song||''; els.eVersionLabel.value=row.VersionLabel||''; els.eVersionArtist.value=row.VersionArtist||''; els.eArrangement.value=row.Arrangement||''; els.eLanguage.value=row.Language||''; els.eTheme.value=row.Theme||''; els.eKey.value=row.Key||''; els.eKeyM.value=row.TypicalKeyMale||''; els.eKeyF.value=row.TypicalKeyFemale||''; els.eAudio.value=row.LinkAudio||''; els.eLyricsLink.value=row.LinkLyrics||''; els.eLyrics.value=row.Lyrics||''; els.eNotes.value=row.ContextNotes||'';
-    const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim());
+    const adminReady=isAdminNow();
     const showAdminBtns = adminReady && !opts.readOnly;
     els.mEdit.style.display=showAdminBtns?'':'none'; els.mDelete.style.display=showAdminBtns?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; els.modal.classList.add('open');
   }
@@ -1001,9 +1596,9 @@
     catch(e){ alert(e.message||e); }
   }
   els.mEdit.addEventListener('click', ()=>{ if(!currentRow) return; editMode=true; els.mEdit.style.display='none'; els.mDelete.style.display='none'; els.mSave.style.display=''; els.mCancel.style.display=''; els.editFields.style.display=''; });
-  els.mCancel.addEventListener('click', ()=>{ editMode=false; const adminReady=!!(els.adminUser.value.trim() && els.adminPin.value.trim()); els.mEdit.style.display=adminReady?'':'none'; els.mDelete.style.display=adminReady?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; });
-  els.mSave.addEventListener('click', async ()=>{ if(!currentRow) return; try{ const r=await apiPost({ action:'updateSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', Song: els.eSong.value, VersionLabel: els.eVersionLabel.value, VersionArtist: els.eVersionArtist.value, Arrangement: els.eArrangement.value, Language: els.eLanguage.value, Theme: els.eTheme.value, Key: els.eKey.value, TypicalKeyMale: els.eKeyM.value, TypicalKeyFemale: els.eKeyF.value, LinkAudio: els.eAudio.value, LinkLyrics: els.eLyricsLink.value, Lyrics: els.eLyrics.value, ContextNotes: els.eNotes.value, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); alert('Updated ✔'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
-  els.mDelete.addEventListener('click', async ()=>{ if(!currentRow) return; if(!confirm('Delete this song?')) return; const hard = confirm('Hard delete (no Archive)? OK = Hard, Cancel = Soft'); try{ const r=await apiPost({ action:'deleteSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', reason:'Removed via UI', hard, adminUser: els.adminUser.value, adminPin: els.adminPin.value }); if(!r.ok) throw new Error(r.error); alert(r.hardDeleted? 'Deleted permanently':'Deleted (archived)'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
+  els.mCancel.addEventListener('click', ()=>{ editMode=false; const adminReady=isAdminNow(); els.mEdit.style.display=adminReady?'':'none'; els.mDelete.style.display=adminReady?'':'none'; els.mSave.style.display='none'; els.mCancel.style.display='none'; els.editFields.style.display='none'; });
+  els.mSave.addEventListener('click', async ()=>{ if(!currentRow) return; try{ const r=await apiPost({ action:'updateSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', Song: els.eSong.value, VersionLabel: els.eVersionLabel.value, VersionArtist: els.eVersionArtist.value, Arrangement: els.eArrangement.value, Language: els.eLanguage.value, Theme: els.eTheme.value, Key: els.eKey.value, TypicalKeyMale: els.eKeyM.value, TypicalKeyFemale: els.eKeyF.value, LinkAudio: els.eAudio.value, LinkLyrics: els.eLyricsLink.value, Lyrics: els.eLyrics.value, ContextNotes: els.eNotes.value, ...adminFields() }); if(!r.ok) throw new Error(r.error); alert('Updated ✔'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
+  els.mDelete.addEventListener('click', async ()=>{ if(!currentRow) return; if(!confirm('Delete this song?')) return; const hard = confirm('Hard delete (no Archive)? OK = Hard, Cancel = Soft'); try{ const r=await apiPost({ action:'deleteSong', SongID: currentRow.SongID||'', Slug: currentRow.Slug||'', reason:'Removed via UI', hard, ...adminFields() }); if(!r.ok) throw new Error(r.error); alert(r.hardDeleted? 'Deleted permanently':'Deleted (archived)'); els.modal.classList.remove('open'); doSearch(); }catch(e){ alert(e.message||e); } });
   els.mClose.addEventListener('click', ()=> els.modal.classList.remove('open'));
   els.modal.addEventListener('click', (e)=>{ if(e.target===els.modal) els.modal.classList.remove('open'); });
 
@@ -1046,7 +1641,12 @@
   function wireLyricsButtons(root){ root.querySelectorAll('.lyrics-btn').forEach(b => b.addEventListener('click', ()=> openModalBySlug(b.dataset.slug))); wireAudioButtons(root); }
 
   function fillSundayPicker(services, currentId){
-    els.sunPicker.innerHTML = (services||[]).map(s => `<option value="${s.serviceId}">${fmtDate(s.date)}${s.theme?' — '+esc(s.theme):''}${s.status==='Done'?' ✓':''}</option>`).join('');
+    const list = services || [];
+    const opt = s => `<option value="${esc(s.serviceId)}">${esc(fmtDate(s.date))}${s.theme?' — '+esc(s.theme):''}${s.status==='Done'?' ✓':''}${s.hasVideo?' 🎥':''}</option>`;
+    const years = [...new Set(list.map(s => String(s.date||'').slice(0,4)))];       // list arrives newest first
+    els.sunPicker.innerHTML = years.length > 1
+      ? years.map(y => `<optgroup label="${esc(y||'Undated')}">${list.filter(s => String(s.date||'').slice(0,4)===y).map(opt).join('')}</optgroup>`).join('')
+      : list.map(opt).join('');
     if(currentId) els.sunPicker.value = currentId;
   }
   function renderSunday(r){
@@ -1056,10 +1656,15 @@
       els.sunTitle.textContent = 'Nothing planned yet';
       els.sunSub.textContent = 'Next Sunday is ' + fmtDate(r.suggestedDate);
       els.sunList.innerHTML = `<li><div class="empty" style="width:100%">No setlist yet for the coming Sunday.</div></li>`;
-      els.sunBadges.classList.add('hidden');
+      els.sunBadges.classList.add('hidden'); els.sunRecording.classList.add('hidden');
       return;
     }
     els.sunTitle.textContent = fmtDate(r.service.date);
+    els.sunRecording.classList.toggle('hidden', !r.service.videoUrl);
+    if(r.service.videoUrl){
+      const a = r.service.worshipStart, b = r.service.worshipEnd;
+      els.recTimes.textContent = (a!=null || b!=null) ? '· worship ' + fmtClock(a||0) + (b!=null ? ' – ' + fmtClock(b) : ' to the end') : '· full service';
+    }
     els.sunSub.textContent = (r.service.theme? r.service.theme+' · ' : '') + (r.service.status==='Done' ? 'Service completed' : 'Updated '+ago(r.builtAt));
     renderBadges(els.sunBadges, r.changes);
     if(!r.items.length){
@@ -1096,7 +1701,7 @@
     if(!els.pDate.value) els.pDate.value = sunData.suggestedDate;
   }
   async function loadPractice(){
-    if(!session && !(els.adminUser.value.trim() && els.adminPin.value.trim())) { renderGates(); return; }
+    if(!isLeaderish()) { renderGates(); return; }
     try{
       const r = await apiPost({ action:'getSundayLeader', ...authFields(), serviceId: sunData && sunData.service ? sunData.service.serviceId : '' });
       if(!r.ok) throw new Error(r.error);
@@ -1104,6 +1709,7 @@
       suggestedDateInput();
       if(r.service){ els.pDate.value = r.service.date; els.pTheme.value = r.service.theme||''; els.pStatusPill.textContent = r.service.status; els.pStatusPill.classList.toggle('done', r.service.status==='Done'); }
       else { els.pStatusPill.textContent=''; }
+      fillRecordingCard(r.service || null);
       renderPracticeList(r);
     }catch(e){ console.warn(e); }
   }
@@ -1153,7 +1759,7 @@
         <div class="fields" style="margin-top:6px">
           <input class="p-key" data-item="${item.itemId}" data-rev="${item.rev}" value="${esc(item.key)}" placeholder="Key" />
           <select class="p-part" data-item="${item.itemId}" data-rev="${item.rev}">${partOptions}</select>
-          <input class="p-note" data-item="${item.itemId}" data-rev="${item.rev}" value="${esc(item.flowNote)}" placeholder="Flow note" style="grid-column:3/5" />
+          <input class="p-note" data-item="${item.itemId}" data-rev="${item.rev}" value="${esc(item.flowNote)}" placeholder="Flow note" />
         </div>
         <div class="style-picker" data-styles-for="${item.itemId}" data-rev="${item.rev}" data-current="${esc(item.style)}" style="margin-top:6px">${styleChips}</div>
         <div class="cap">Updated ${ago(item.updatedAt)} by ${esc(item.updatedBy)}</div>
@@ -1286,6 +1892,8 @@
   mountTranscribePanel(els.txEdit, { lyricsEl: els.eLyrics, languageEl: els.eLanguage, audioEl: els.eAudio });
   fillTxLangs();
   loadSession();
+  fillVoiceSelects();
+  restoreAccount();
   if (els.apiBase.value) { (async()=>{ try{ await apiGet({action:'health'}); setOnline(true); await bootstrap(); await loadSundayPublic(); startPolling(); }catch{ setOnline(false) } })(); }
 })();
 </script>
